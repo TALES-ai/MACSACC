@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Students - MACS Primary School</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: #F9FAFB;
+      color: #111827;
+      display: flex;
+      min-height: 100vh;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background: #1D4ED8;
+      color: #FFFFFF;
+      padding: 20px;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      height: 100%;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+    .sidebar .profile {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .sidebar .profile img {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #22C55E;
+      margin-bottom: 12px;
+    }
+    .sidebar h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      color: #FFFFFF;
+      padding: 12px 16px;
+      text-decoration: none;
+      background: none;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: background 0.2s ease, transform 0.1s;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #22C55E;
+      transform: translateX(4px);
+    }
+    .sidebar a i, .sidebar button i {
+      margin-right: 10px;
+    }
+    .main-content {
+      margin-left: 270px;
+      padding: 32px;
+      background: #FFFFFF;
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .section {
+      background: #FFFFFF;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+      flex: 1;
+    }
+    .section h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .section h1 i {
+      margin-right: 10px;
+      color: #22C55E;
+    }
+    .dashboard-card {
+      background: #1D4ED8;
+      color: #FFFFFF;
+      padding: 24px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-bottom: 24px;
+    }
+    .dashboard-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+    .dashboard-card i {
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: #22C55E;
+    }
+    .dashboard-card strong {
+      font-size: 24px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .dashboard-card span {
+      font-size: 14px;
+      color: #D1D5DB;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #E5E7EB;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background: #1D4ED8;
+      color: #FFFFFF;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    th:hover {
+      background: #3B82F6;
+    }
+    tr:nth-child(even) {
+      background: #F9FAFB;
+    }
+    tr:nth-child(odd) {
+      background: #FFFFFF;
+    }
+    tr:hover {
+      background: #F3F4F6;
+    }
+    .search-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #F9FAFB;
+      transition: border-color 0.2s;
+    }
+    .search-bar input:focus {
+      border-color: #22C55E;
+      outline: none;
+    }
+    .search-bar button, .download-button {
+      padding: 10px 16px;
+      background: #22C55E;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .search-bar button:hover, .download-button:hover {
+      background: #16A34A;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .filter-group select {
+      padding: 10px;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #F9FAFB;
+      min-width: 150px;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .pagination button {
+      padding: 8px 12px;
+      background: #1D4ED8;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .pagination button:disabled {
+      background: #6B7280;
+      cursor: not-allowed;
+    }
+    .pagination button:hover:not(:disabled) {
+      background: #3B82F6;
+    }
+    .error-message {
+      color: #EF4444;
+      font-size: 14px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+    }
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background: #111827;
+      color: #FFFFFF;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 200px;
+      }
+      .main-content {
+        margin-left: 220px;
+      }
+      .dashboard-card {
+        padding: 16px;
+      }
+      table {
+        font-size: 12px;
+      }
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div><i class="fas fa-spinner fa-spin"></i> Loading Students...</div>
+  </div>
+  <div class="container">
+    <div class="sidebar">
+      <div class="profile">
+        <img src="https://img.icons8.com/color/80/000000/accountant.png" alt="Accountant Icon">
+        <p id="accountantName"></p>
+      </div>
+      <h2>Accountant Portal</h2>
+      <a href="accountant.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="students.html"><i class="fas fa-users"></i> Students</a>
+      <a href="uploadFees.html"><i class="fas fa-money-check-alt"></i> Upload Fees</a>
+      <a href="feeRecords.html"><i class="fas fa-file-invoice"></i> Fee Records</a>
+      <a href="announcements.html"><i class="fas fa-bell"></i> Announcements</a>
+      <a href="funds.html"><i class="fas fa-university"></i> Funds Management</a>
+      <a href="otherFunds.html"><i class="fas fa-coins"></i> Other Funds</a>
+      <a href="requests.html"><i class="fas fa-tasks"></i> Requests</a>
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+    <div class="main-content">
+      <div id="students" class="section">
+        <h1><i class="fas fa-users"></i> Students</h1>
+        <div class="dashboard-card">
+          <i class="fas fa-users"></i>
+          <strong id="totalStudents">Loading...</strong>
+          <span>Total Students</span>
+          <span id="totalBalance" style="font-size: 14px; margin-top: 8px; display: block; color: #D1D5DB;">Total Balance: Loading...</span>
+        </div>
+        <div class="search-bar">
+          <input id="studentSearch" type="text" placeholder="Search by RegNo or Name">
+          <div class="tooltip">
+            <button onclick="searchStudents()"><i class="fas fa-search"></i> Search</button>
+            <span class="tooltiptext">Search by Reg No or Name</span>
+          </div>
+        </div>
+        <div class="filter-group">
+          <select id="formSelect" onchange="loadStudents()">
+            <option value="all">All Forms</option>
+            <option value="playgroup">Play Group</option>
+            <option value="pp1">Pre-Primary 1</option>
+            <option value="pp2">Pre-Primary 2</option>
+            <option value="grade1">Grade 1</option>
+            <option value="grade2">Grade 2</option>
+            <option value="grade3">Grade 3</option>
+            <option value="grade4">Grade 4</option>
+            <option value="grade5">Grade 5</option>
+            <option value="grade6">Grade 6</option>
+            <option value="grade7">Grade 7</option>
+            <option value="grade8">Grade 8</option>
+            <option value="grade9">Grade 9</option>
+          </select>
+          <div class="tooltip">
+            <button class="download-button" onclick="exportStudentsToCSV()"><i class="fas fa-download"></i> Export to CSV</button>
+            <span class="tooltiptext">Download student data as CSV</span>
+          </div>
+        </div>
+        <table id="studentsTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)">Reg No <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(1)">Name <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(2)">Level <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(3)">Stream <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(4)">Total Expected (KES) <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(5)">Total Paid (KES) <i class="fas fa-sort"></i></th>
+              <th onclick="sortTable(6)">Balance (KES) <i class="fas fa-sort"></i></th>
+            </tr>
+          </thead>
+          <tbody id="studentsBody"></tbody>
+        </table>
+        <div class="pagination">
+          <button onclick="changePage(-1)" id="prevPage"><i class="fas fa-chevron-left"></i> Previous</button>
+          <span id="pageInfo">Page 1</span>
+          <button onclick="changePage(1)" id="nextPage">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div id="studentsMessage" class="error-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqVIFxRrkNSejRuNY9NPYrMpUShO2Yz7U",
+      authDomain: "lifeflow-yhtl6.firebaseapp.com",
+      databaseURL: "https://lifeflow-yhtl6-default-rtdb.firebaseio.com",
+      projectId: "lifeflow-yhtl6",
+      storageBucket: "lifeflow-yhtl6.firebasestorage.app",
+      messagingSenderId: "129785956666",
+      appId: "1:129785956666:web:541a08bee37c739556a803"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const loadingScreen = document.getElementById("loadingScreen");
+    let studentsList = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let sortColumn = 0;
+    let sortDirection = 1;
+
+    function showMessage(elementId, message, isError = true) {
+      const messageDiv = document.getElementById(elementId);
+      messageDiv.textContent = message;
+      messageDiv.style.color = isError ? "#EF4444" : "#22C55E";
+      messageDiv.style.display = "block";
+      setTimeout(() => {
+        messageDiv.style.display = "none";
+      }, 3000);
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }).catch(error => {
+        showMessage("studentsMessage", `Logout failed: ${error.message}`);
+      });
+    }
+
+    async function loadStudents() {
+      const form = document.getElementById("formSelect").value;
+      const studentsBody = document.getElementById("studentsBody");
+      studentsBody.innerHTML = "";
+      studentsList = [];
+      const seenRegNos = new Set();
+
+      try {
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+
+        Object.entries(students).forEach(([regNo, student]) => {
+          const normalizedRegNo = regNo.replace(/_/g, "/");
+          if (seenRegNos.has(normalizedRegNo)) {
+            console.warn(`Duplicate RegNo detected: ${normalizedRegNo}`);
+            return;
+          }
+          seenRegNos.add(normalizedRegNo);
+
+          const studentForm = student.form || `form${student.profile?.year || "1"}`;
+          if (form === "all" || studentForm === form) {
+            const totalExpected = student.fees?.totalExpected || 0;
+            const transactions = student.fees?.transactions || {};
+            const totalPaid = Object.values(transactions).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+            const balance = totalExpected - totalPaid;
+
+            studentsList.push({
+              regNo: normalizedRegNo,
+              name: student.profile?.name || "Unknown",
+              form: studentForm,
+              stream: student.stream || student.profile?.stream || "-",
+              totalExpected,
+              totalPaid,
+              balance
+            });
+          }
+        });
+
+        document.getElementById("totalStudents").textContent = studentsList.length;
+        const totalBalance = studentsList.reduce((sum, student) => sum + student.balance, 0);
+        document.getElementById("totalBalance").textContent = `Total Balance: ${totalBalance.toFixed(2)} KES`;
+
+        if (studentsList.length === 0) {
+          studentsBody.innerHTML = `<tr><td colspan="7">No students found in ${form === "all" ? "any form" : form.replace("pp", "Pre-Primary ").replace("grade", "Grade ")}.</td></tr>`;
+          updatePagination();
+          return;
+        }
+
+        sortStudents();
+        displayStudents();
+      } catch (error) {
+        studentsBody.innerHTML = `<tr><td colspan="7">Failed to load students: ${error.message}</td></tr>`;
+        showMessage("studentsMessage", `Failed to load students: ${error.message}`);
+      } finally {
+        setTimeout(() => loadingScreen.classList.add("hidden"), 300);
+      }
+    }
+
+    function sortStudents() {
+      studentsList.sort((a, b) => {
+        let valueA, valueB;
+        switch (sortColumn) {
+          case 0: valueA = a.regNo; valueB = b.regNo; break;
+          case 1: valueA = a.name; valueB = b.name; break;
+          case 2: valueA = a.form; valueB = b.form; break;
+          case 3: valueA = a.stream; valueB = b.stream; break;
+          case 4: valueA = a.totalExpected; valueB = b.totalExpected; break;
+          case 5: valueA = a.totalPaid; valueB = b.totalPaid; break;
+          case 6: valueA = a.balance; valueB = b.balance; break;
+        }
+        if (typeof valueA === "string") {
+          return valueA.localeCompare(valueB) * sortDirection;
+        }
+        return (valueA - valueB) * sortDirection;
+      });
+    }
+
+    function sortTable(column) {
+      if (sortColumn === column) {
+        sortDirection *= -1;
+      } else {
+        sortColumn = column;
+        sortDirection = 1;
+      }
+      const sortIcons = document.querySelectorAll("th i");
+      sortIcons.forEach(icon => icon.className = "fas fa-sort");
+      const currentIcon = document.querySelector(`th:nth-child(${column + 1}) i`);
+      currentIcon.className = sortDirection === 1 ? "fas fa-sort-up" : "fas fa-sort-down";
+      displayStudents();
+    }
+
+    function displayStudents() {
+      const studentsBody = document.getElementById("studentsBody");
+      studentsBody.innerHTML = "";
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const paginatedStudents = studentsList.slice(start, end);
+
+      paginatedStudents.forEach(student => {
+        const formDisplay = student.form === "playgroup" ? "Play Group" : student.form.replace("pp", "Pre-Primary ").replace("grade", "Grade ");
+        studentsBody.innerHTML += `
+          <tr>
+            <td>${student.regNo}</td>
+            <td>${student.name}</td>
+            <td>${formDisplay}</td>
+            <td>${student.stream}</td>
+            <td>${student.totalExpected.toFixed(2)}</td>
+            <td>${student.totalPaid.toFixed(2)}</td>
+            <td>${student.balance.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+
+      updatePagination();
+    }
+
+    function updatePagination() {
+      const totalPages = Math.ceil(studentsList.length / rowsPerPage);
+      document.getElementById("pageInfo").textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById("prevPage").disabled = currentPage === 1;
+      document.getElementById("nextPage").disabled = currentPage === totalPages;
+    }
+
+    function changePage(direction) {
+      const totalPages = Math.ceil(studentsList.length / rowsPerPage);
+      currentPage = Math.min(Math.max(currentPage + direction, 1), totalPages);
+      displayStudents();
+    }
+
+    async function searchStudents() {
+      const searchQuery = document.getElementById("studentSearch").value.trim().toLowerCase();
+      const form = document.getElementById("formSelect").value;
+      const studentsBody = document.getElementById("studentsBody");
+      studentsBody.innerHTML = "";
+      studentsList = [];
+      const seenRegNos = new Set();
+
+      try {
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+
+        Object.entries(students).forEach(([regNo, student]) => {
+          const normalizedRegNo = regNo.replace(/_/g, "/");
+          if (seenRegNos.has(normalizedRegNo)) {
+            console.warn(`Duplicate RegNo detected in search: ${normalizedRegNo}`);
+            return;
+          }
+          seenRegNos.add(normalizedRegNo);
+
+          const studentForm = student.form || `form${student.profile?.year || "1"}`;
+          const studentName = student.profile?.name?.toLowerCase() || "";
+          if ((form === "all" || studentForm === form) &&
+              (searchQuery === "" || normalizedRegNo.toLowerCase().includes(searchQuery) || studentName.includes(searchQuery))) {
+            const totalExpected = student.fees?.totalExpected || 0;
+            const transactions = student.fees?.transactions || {};
+            const totalPaid = Object.values(transactions).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+            const balance = totalExpected - totalPaid;
+
+            studentsList.push({
+              regNo: normalizedRegNo,
+              name: student.profile?.name || "Unknown",
+              form: studentForm,
+              stream: student.stream || student.profile?.stream || "-",
+              totalExpected,
+              totalPaid,
+              balance
+            });
+          }
+        });
+
+        document.getElementById("totalStudents").textContent = studentsList.length;
+        const totalBalance = studentsList.reduce((sum, student) => sum + student.balance, 0);
+        document.getElementById("totalBalance").textContent = `Total Balance: ${totalBalance.toFixed(2)} KES`;
+
+        if (studentsList.length === 0) {
+          studentsBody.innerHTML = `<tr><td colspan="7">No students found.</td></tr>`;
+          updatePagination();
+          return;
+        }
+
+        sortStudents();
+        displayStudents();
+      } catch (error) {
+        studentsBody.innerHTML = `<tr><td colspan="7">Failed to load students: ${error.message}</td></tr>`;
+        showMessage("studentsMessage", `Failed to load students: ${error.message}`);
+      }
+    }
+
+    async function exportStudentsToCSV() {
+      if (studentsList.length === 0) {
+        showMessage("studentsMessage", "No students to export.");
+        return;
+      }
+
+      try {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Reg No,Name,Level,Stream,Total Expected (KES),Total Paid (KES),Balance (KES)\n";
+
+        studentsList.forEach(student => {
+          const formDisplay = student.form === "playgroup" ? "Play Group" : student.form.replace("pp", "Pre-Primary ").replace("grade", "Grade ");
+          csvContent += `${student.regNo},${student.name},${formDisplay},${student.stream},${student.totalExpected.toFixed(2)},${student.totalPaid.toFixed(2)},${student.balance.toFixed(2)}\n`;
+        });
+
+        csvContent += `\nTotal Students,${studentsList.length}\n`;
+        const totalBalance = studentsList.reduce((sum, student) => sum + student.balance, 0);
+        csvContent += `Total Balance,${totalBalance.toFixed(2)}\n`;
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `students_${new Date().toISOString().split("T")[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showMessage("studentsMessage", "Students exported successfully!", false);
+      } catch (error) {
+        showMessage("studentsMessage", `Failed to export students: ${error.message}`);
+      }
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (!user || sessionStorage.getItem("userType") !== "accountant") {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      } else {
+        const accountantEmail = sessionStorage.getItem("username") || "Accountant";
+        const accountantName = accountantEmail.split("@")[0].replace(/\d/g, "");
+        document.getElementById("accountantName").textContent = accountantName;
+        loadStudents();
+      }
+    });
+
+    document.getElementById("studentSearch").addEventListener("input", searchStudents);
+  </script>
+</body>
+</html>

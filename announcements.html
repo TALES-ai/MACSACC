@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcements - MACS Primary School</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: #F9FAFB;
+      color: #111827;
+      display: flex;
+      min-height: 100vh;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background: #1D4ED8;
+      color: #FFFFFF;
+      padding: 20px;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      height: 100%;
+      overflow-y: auto;
+    }
+    .sidebar .profile {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .sidebar .profile img {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #22C55E;
+      margin-bottom: 12px;
+    }
+    .sidebar h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      color: #FFFFFF;
+      padding: 12px 16px;
+      text-decoration: none;
+      background: none;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: background 0.2s ease, transform 0.1s;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #22C55E;
+      transform: translateX(4px);
+    }
+    .sidebar a i, .sidebar button i {
+      margin-right: 10px;
+    }
+    .main-content {
+      margin-left: 270px;
+      padding: 32px;
+      background: #FFFFFF;
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .section {
+      background: #FFFFFF;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      max-width: 800px;
+      width: 100%;
+    }
+    .section h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .section h1 i {
+      margin-right: 10px;
+      color: #22C55E;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    .input-group label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #111827;
+    }
+    .input-group label i {
+      margin-right: 8px;
+      color: #22C55E;
+    }
+    .input-group input, .input-group select, .input-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #F9FAFB;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+      border-color: #1D4ED8;
+      outline: none;
+    }
+    .input-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    button {
+      padding: 12px 20px;
+      background: #22C55E;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #16A34A;
+    }
+    .error-message {
+      color: #EF4444;
+      font-size: 14px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+    }
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .select2-container--default .select2-selection--single {
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      background: #F9FAFB;
+      height: 40px;
+      padding: 8px;
+      font-size: 14px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+      color: #111827;
+      line-height: 24px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+      height: 40px;
+    }
+    .select2-container {
+      width: 100% !important;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+  </div>
+  <div class="container">
+    <div class="sidebar">
+      <div class="profile">
+        <img src="https://img.icons8.com/color/80/000000/accountant.png" alt="Accountant Icon">
+        <p id="accountantName"></p>
+      </div>
+      <h2>Accountant Portal</h2>
+      <a href="accountant.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="students.html"><i class="fas fa-users"></i> Students</a>
+      <a href="uploadFees.html"><i class="fas fa-money-check-alt"></i> Upload Fees</a>
+      <a href="feeRecords.html"><i class="fas fa-file-invoice"></i> Fee Records</a>
+      <a href="announcements.html"><i class="fas fa-bell"></i> Announcements</a>
+      <a href="funds.html"><i class="fas fa-university"></i> Funds Management</a>
+      <a href="otherFunds.html"><i class="fas fa-coins"></i> Other Funds</a>
+      <a href="requests.html"><i class="fas fa-tasks"></i> Requests</a>
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+    <div class="main-content">
+      <div id="announcements" class="section">
+        <h1><i class="fas fa-bell"></i> Post Announcement</h1>
+        <div class="input-group">
+          <label><i class="fas fa-users"></i> Select Student</label>
+          <select id="announcementTargetSelect">
+            <option value="general">General (All Students)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label><i class="fas fa-heading"></i> Title</label>
+          <input id="announcementTitle" type="text" placeholder="Enter announcement title">
+        </div>
+        <div class="input-group">
+          <label><i class="fas fa-comment"></i> Message</label>
+          <textarea id="announcementMessage" placeholder="Enter announcement message"></textarea>
+        </div>
+        <div class="input-group">
+          <label><i class="fas fa-calendar"></i> Date</label>
+          <input id="announcementDate" type="date" readonly>
+        </div>
+        <button onclick="postAnnouncement()">Post Announcement</button>
+        <div id="announcementsMessage" class="error-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqVIFxRrkNSejRuNY9NPYrMpUShO2Yz7U",
+      authDomain: "lifeflow-yhtl6.firebaseapp.com",
+      databaseURL: "https://lifeflow-yhtl6-default-rtdb.firebaseio.com",
+      projectId: "lifeflow-yhtl6",
+      storageBucket: "lifeflow-yhtl6.firebasestorage.app",
+      messagingSenderId: "129785956666",
+      appId: "1:129785956666:web:541a08bee37c739556a803"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const loadingScreen = document.getElementById("loadingScreen");
+
+    auth.onAuthStateChanged(user => {
+      if (!user || sessionStorage.getItem("userType") !== "accountant") {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      } else {
+        const accountantEmail = sessionStorage.getItem("username") || "Accountant";
+        const accountantName = accountantEmail.split("@")[0].replace(/\d/g, "");
+        document.getElementById("accountantName").textContent = accountantName;
+        loadStudents();
+        setAnnouncementDate();
+        setTimeout(() => loadingScreen.classList.add("hidden"), 300);
+      }
+    });
+
+    function showMessage(elementId, message, isError = true) {
+      const messageDiv = document.getElementById(elementId);
+      messageDiv.textContent = message;
+      messageDiv.style.color = isError ? "#EF4444" : "#22C55E";
+      messageDiv.style.display = "block";
+      setTimeout(() => {
+        messageDiv.style.display = "none";
+      }, 3000);
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }).catch(error => {
+        showMessage("announcementsMessage", `Logout failed: ${error.message}`);
+      });
+    }
+
+    function setAnnouncementDate() {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById("announcementDate").value = today;
+    }
+
+    async function loadStudents() {
+      const targetSelect = document.getElementById("announcementTargetSelect");
+      targetSelect.innerHTML = `<option value="general">General (All Students)</option>`;
+
+      try {
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+        const studentsList = [];
+
+        Object.entries(students).forEach(([regNo, student]) => {
+          const studentForm = student.form || `form${student.profile?.year || "1"}`;
+          studentsList.push({
+            regNo,
+            name: student.profile?.name || "Unknown",
+            stream: student.stream || student.profile?.stream || "-",
+            form: studentForm.replace("pp", "Pre-Primary ").replace("grade", "Grade ")
+          });
+        });
+
+        if (studentsList.length === 0) {
+          targetSelect.innerHTML = `<option value="general">General (All Students)</option>`;
+          $(targetSelect).select2({ placeholder: "No students found", allowClear: true });
+          showMessage("announcementsMessage", "No students found in the database.");
+          return;
+        }
+
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        studentsList.forEach(student => {
+          targetSelect.innerHTML += `<option value="${student.regNo}">${student.name} (${student.regNo}, ${student.form})</option>`;
+        });
+
+        $(targetSelect).select2({
+          placeholder: "Select a student or General",
+          allowClear: true,
+          width: '100%'
+        });
+      } catch (error) {
+        console.error("Error loading students:", error);
+        targetSelect.innerHTML = `<option value="general">General (All Students)</option>`;
+        $(targetSelect).select2({ placeholder: "Failed to load students", allowClear: true });
+        showMessage("announcementsMessage", `Failed to load students: ${error.message}`);
+      }
+    }
+
+    async function postAnnouncement() {
+      const title = document.getElementById("announcementTitle").value.trim();
+      const message = document.getElementById("announcementMessage").value.trim();
+      const target = document.getElementById("announcementTargetSelect").value;
+      const date = document.getElementById("announcementDate").value;
+      const postedBy = sessionStorage.getItem("username") || "Accountant";
+      const timestamp = new Date().toISOString();
+
+      if (!title || !message) {
+        showMessage("announcementsMessage", "Title and message are required.");
+        return;
+      }
+
+      if (!target) {
+        showMessage("announcementsMessage", "Please select a valid target.");
+        return;
+      }
+
+      try {
+        const announcementData = { title, message, date, postedBy, timestamp };
+        if (target === "general") {
+          await db.ref("announcements/general").push(announcementData);
+        } else {
+          await db.ref(`users/students/${target}/announcements`).push(announcementData);
+        }
+        showMessage("announcementsMessage", "Announcement posted successfully.", false);
+        document.getElementById("announcementTitle").value = "";
+        document.getElementById("announcementMessage").value = "";
+        document.getElementById("announcementTargetSelect").value = "general";
+        $(document.getElementById("announcementTargetSelect")).select2("val", "general");
+      } catch (error) {
+        console.error("Error posting announcement:", error);
+        showMessage("announcementsMessage", `Failed to post announcement: ${error.message}`);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Requests - MACS Primary School</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: #F9FAFB;
+      color: #111827;
+      display: flex;
+      min-height: 100vh;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background: linear-gradient(to bottom, #1D4ED8, #3B82F6);
+      color: #FFFFFF;
+      padding: 1.5rem;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      height: 100%;
+      overflow-y: auto;
+    }
+    .sidebar .profile {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .sidebar .profile img {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #22C55E;
+      margin-bottom: 0.75rem;
+    }
+    .sidebar h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      color: #FFFFFF;
+      padding: 0.75rem 1rem;
+      text-decoration: none;
+      background: none;
+      margin-bottom: 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      transition: background 0.2s ease, transform 0.1s;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #22C55E;
+      transform: translateX(4px);
+    }
+    .sidebar a i, .sidebar button i {
+      margin-right: 0.625rem;
+    }
+    .main-content {
+      margin-left: 250px;
+      padding: 2rem;
+      background: #FFFFFF;
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .section {
+      background: #FFFFFF;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      max-width: 80rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .greeting {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1D4ED8;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    .quote {
+      font-size: 1rem;
+      color: #374151;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-style: italic;
+    }
+    .tip {
+      font-size: 1rem;
+      color: #374151;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .tip a {
+      color: #F59E0B;
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .success-message {
+      display: none;
+      background: #F0FDF4;
+      color: #166534;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      animation: slideIn 0.5s ease-in-out;
+    }
+    .success-message img {
+      width: 24px;
+      height: 24px;
+    }
+    .error-message {
+      color: #EF4444;
+      font-size: 0.875rem;
+      margin: 1rem 0;
+      text-align: center;
+      font-weight: 500;
+    }
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+      font-size: 1rem;
+      color: #1D4ED8;
+    }
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .form-group {
+      position: relative;
+    }
+    .form-group input:invalid, .form-group select:invalid, .form-group textarea:invalid {
+      border-color: #EF4444;
+    }
+    .form-group .error-text {
+      color: #EF4444;
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      display: none;
+    }
+    .preview-section {
+      background: #F9FAFB;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+      border: 1px solid #E5E7EB;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.25rem;
+    }
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #E5E7EB;
+      font-size: 0.875rem;
+    }
+    th {
+      background: #1D4ED8;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background: #F9FAFB;
+    }
+    tr:hover {
+      background: #E5E7EB;
+    }
+    .status-pending {
+      color: #EF4444;
+      font-weight: 500;
+      background: #FEE2E2;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+    .status-accepted {
+      color: #22C55E;
+      font-weight: 500;
+      background: #DCFCE7;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+    .status-rejected {
+      color: #6B7280;
+      font-weight: 500;
+      background: #E5E7EB;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    /* Table Columns */
+    th:nth-child(1), td:nth-child(1) { width: 10%; } /* Date */
+    th:nth-child(2), td:nth-child(2) { width: 15%; } /* Name */
+    th:nth-child(3), td:nth-child(3) { width: 20%; } /* Description */
+    th:nth-child(4), td:nth-child(4) { width: 10%; } /* Cost */
+    th:nth-child(5), td:nth-child(5) { width: 15%; } /* Provider/Supplier */
+    th:nth-child(6), td:nth-child(6) { width: 15%; } /* Contact */
+    th:nth-child(7), td:nth-child(7) { width: 15%; } /* Timestamp */
+    th:nth-child(8), td:nth-child(8) { width: 10%; } /* Status */
+    th:nth-child(9), td:nth-child(9) { width: 10%; } /* Type */
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div><i class="fas fa-spinner fa-spin"></i> Loading Requests...</div>
+  </div>
+  <div class="container">
+    <div class="sidebar">
+      <div class="profile">
+        <img src="https://img.icons8.com/color/80/000000/accountant.png" alt="Accountant Icon">
+        <p id="accountantName"></p>
+      </div>
+      <h2>Accountant Portal</h2>
+      <a href="accountant.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="students.html"><i class="fas fa-users"></i> Students</a>
+      <a href="uploadFees.html"><i class="fas fa-money-check-alt"></i> Upload Fees</a>
+      <a href="feeRecords.html"><i class="fas fa-file-invoice"></i> Fee Records</a>
+      <a href="announcements.html"><i class="fas fa-bell"></i> Announcements</a>
+      <a href="funds.html"><i class="fas fa-university"></i> Funds Management</a>
+      <a href="otherFunds.html"><i class="fas fa-coins"></i> Other Funds</a>
+      <a href="requests.html"><i class="fas fa-tasks"></i> Requests</a>
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+    <div class="main-content">
+      <div class="section">
+        <h1 id="greeting" class="greeting"></h1>
+        <p id="quote" class="quote"></p>
+        <p class="tip">Did you know you can request services or purchases here? <a onclick="document.getElementById('requestForm').scrollIntoView({behavior: 'smooth'})">Click to start!</a></p>
+        <div id="successMessage" class="success-message flex">
+          <span id="successText"></span>
+          <img src="https://twemoji.maxcdn.com/v/latest/svg/1f60a.svg" alt="Smiling Emoji">
+        </div>
+      </div>
+      <div class="section" id="requestForm">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Add New Request</h2>
+        <div class="max-w-3xl mx-auto grid grid-cols-1 gap-6">
+          <div class="form-group">
+            <label for="requestType" class="block text-sm font-medium text-gray-700 mb-2">Request Type</label>
+            <select id="requestType" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" onchange="toggleFormFields()">
+              <option value="service">Service</option>
+              <option value="purchase">Purchase</option>
+            </select>
+          </div>
+          <div id="serviceFields">
+            <div class="form-group">
+              <label for="serviceName" class="block text-sm font-medium text-gray-700 mb-2">Service Name</label>
+              <input type="text" id="serviceName" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter service name" required>
+              <span class="error-text">Service name is required</span>
+            </div>
+            <div class="form-group">
+              <label for="serviceAmount" class="block text-sm font-medium text-gray-700 mb-2">Amount (KES)</label>
+              <input type="number" id="serviceAmount" step="0.01" min="0" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter amount" required>
+              <span class="error-text">Valid amount is required</span>
+            </div>
+          </div>
+          <div id="purchaseFields" class="hidden">
+            <div class="form-group">
+              <label for="itemName" class="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
+              <input type="text" id="itemName" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter item name" required>
+              <span class="error-text">Item name is required</span>
+            </div>
+            <div class="form-group">
+              <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+              <input type="number" id="quantity" min="1" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter quantity" required>
+              <span class="error-text">Valid quantity is required</span>
+            </div>
+            <div class="form-group">
+              <label for="unitCost" class="block text-sm font-medium text-gray-700 mb-2">Unit Cost (KES)</label>
+              <input type="number" id="unitCost" step="0.01" min="0" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter unit cost" required>
+              <span class="error-text">Valid unit cost is required</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="providerSupplier" class="block text-sm font-medium text-gray-700 mb-2">Provider/Supplier</label>
+            <input type="text" id="providerSupplier" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter provider or supplier name" list="providerList" required>
+            <datalist id="providerList"></datalist>
+            <span class="error-text">Provider/Supplier is required</span>
+          </div>
+          <div class="form-group">
+            <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">Contact</label>
+            <input type="text" id="contact" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter contact details" required>
+            <span class="error-text">Contact details are required</span>
+          </div>
+          <div class="form-group">
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea id="description" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none transition-all" placeholder="Enter description" rows="4"></textarea>
+          </div>
+          <div class="preview-section" id="previewSection" style="display: none;">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Request Preview</h3>
+            <p><strong>Type:</strong> <span id="previewType"></span></p>
+            <p><strong>Name:</strong> <span id="previewName"></span></p>
+            <p><strong>Cost:</strong> <span id="previewCost"></span></p>
+            <p><strong>Provider/Supplier:</strong> <span id="previewProvider"></span></p>
+            <p><strong>Contact:</strong> <span id="previewContact"></span></p>
+            <p><strong>Description:</strong> <span id="previewDescription"></span></p>
+          </div>
+          <div class="flex space-x-4">
+            <button onclick="previewRequest()" class="bg-yellow-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-yellow-600 transition">Preview</button>
+            <button onclick="addRequest()" class="bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition">Submit Request</button>
+            <button onclick="resetForm()" class="bg-gray-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-600 transition">Reset</button>
+          </div>
+          <div id="errorMessage" class="error-message"></div>
+        </div>
+      </div>
+      <div class="section">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Requests</h2>
+        <div class="flex flex-col sm:flex-row justify-between mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
+          <div class="flex-1">
+            <label for="filterStatus" class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+            <select id="filterStatus" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none" onchange="filterRequests()">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="flex-1">
+            <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+            <select id="sortBy" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none" onchange="filterRequests()">
+              <option value="timestamp">Date</option>
+              <option value="cost">Cost</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+          <div class="flex-1">
+            <label for="searchQuery" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input type="text" id="searchQuery" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:border-blue-600 focus:outline-none" placeholder="Search by name or description" oninput="filterRequests()">
+          </div>
+          <div class="flex items-end">
+            <button onclick="exportToCSV()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">Export to CSV</button>
+          </div>
+        </div>
+        <p class="text-gray-700 mb-4">Oops, these requests were not permitted by the management team:</p>
+        <table class="w-full">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Cost</th>
+              <th>Provider/Supplier</th>
+              <th>Contact</th>
+              <th>Timestamp</th>
+              <th>Status</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="requestsBody"></tbody>
+        </table>
+        <div id="requestsMessage" class="error-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqVIFxRrkNSejRuNY9NPYrMpUShO2Yz7U",
+      authDomain: "lifeflow-yhtl6.firebaseapp.com",
+      databaseURL: "https://lifeflow-yhtl6-default-rtdb.firebaseio.com",
+      projectId: "lifeflow-yhtl6",
+      storageBucket: "lifeflow-yhtl6.firebasestorage.app",
+      messagingSenderId: "129785956666",
+      appId: "1:129785956666:web:541a08bee37c739556a803"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const loadingScreen = document.getElementById("loadingScreen");
+    let allRequests = [];
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        console.error("Authentication failed: No user logged in");
+        sessionStorage.clear();
+        window.location.href = "index.html";
+        return;
+      }
+
+      try {
+        const userEmail = user.email;
+        const allowedEmails = ["macsschool@account.ac", "stellamachogu2025@gmail.com", "bttc@admin.ep.finley"];
+        console.log("Checking user permissions:", { userId: user.uid, userEmail });
+
+        const userSnapshot = await db.ref(`users/${user.uid}/role`).once("value");
+        const userRole = userSnapshot.val();
+        console.log(`User role from Firebase: ${userRole || 'none'}`);
+
+        if (!allowedEmails.includes(userEmail) && userRole !== "admin" && userRole !== "accountant") {
+          console.error("Permission denied: User lacks required role or email", { userId: user.uid, userEmail, userRole });
+          sessionStorage.clear();
+          window.location.href = "index.html";
+          return;
+        }
+
+        const accountantEmail = sessionStorage.getItem("username") || userEmail || "macsschool@account.ac";
+        const accountantName = accountantEmail.split("@")[0].replace(/\d/g, "");
+        document.getElementById("accountantName").textContent = accountantName;
+
+        // Set greeting and quote (07:07 PM EAT)
+        const hour = new Date().getHours();
+        const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+        document.getElementById("greeting").textContent = `${greeting}, ${accountantName}`;
+        const quotes = [
+          "Streamline your requests with ease!",
+          "Efficient management starts here.",
+          "Your requests, our priority.",
+          "Simplify, organize, succeed."
+        ];
+        const day = new Date().getDay();
+        document.getElementById("quote").textContent = quotes[day % quotes.length];
+
+        // Real-time form validation
+        const inputs = document.querySelectorAll("input[required], select[required]");
+        inputs.forEach(input => {
+          input.addEventListener("input", () => {
+            const errorText = input.nextElementSibling;
+            if (!input.value || (input.type === "number" && input.value <= 0)) {
+              input.classList.add("border-red-500");
+              errorText.style.display = "block";
+            } else {
+              input.classList.remove("border-red-500");
+              errorText.style.display = "none";
+            }
+          });
+        });
+
+        loadProviders();
+        loadRequests();
+        setTimeout(() => loadingScreen.classList.add("hidden"), 300);
+      } catch (error) {
+        console.error("Error checking user role:", error);
+        showMessage("requestsMessage", `Authentication error: ${error.message}`);
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }
+    });
+
+    function showMessage(elementId, message, isError = true) {
+      const messageDiv = document.getElementById(elementId);
+      messageDiv.textContent = message;
+      messageDiv.style.color = isError ? "#EF4444" : "#166534";
+      messageDiv.style.display = "block";
+      setTimeout(() => {
+        messageDiv.style.display = "none";
+      }, 5000);
+    }
+
+    function showSuccessMessage(text) {
+      const successDiv = document.getElementById("successMessage");
+      document.getElementById("successText").textContent = text;
+      successDiv.style.display = "flex";
+      setTimeout(() => {
+        successDiv.style.display = "none";
+      }, 5000);
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }).catch(error => {
+        console.error("Logout error:", error);
+        showMessage("requestsMessage", `Logout failed: ${error.message}`);
+      });
+    }
+
+    async function loadProviders() {
+      try {
+        const providers = new Set();
+        const paths = [
+          "requests/service_requests",
+          "outs/purchase_requests",
+          "outs/accepted/service_requests",
+          "outs/accepted/purchase_requests",
+          "outs/rejected/service_requests",
+          "outs/rejected/purchase_requests"
+        ];
+
+        for (const path of paths) {
+          const snapshot = await db.ref(path).once("value");
+          const data = snapshot.val();
+          if (data) {
+            Object.values(data).forEach(req => {
+              if (req.provider) providers.add(req.provider);
+              if (req.supplier) providers.add(req.supplier);
+            });
+          }
+        }
+
+        const providerList = document.getElementById("providerList");
+        providerList.innerHTML = "";
+        providers.forEach(provider => {
+          const option = document.createElement("option");
+          option.value = provider;
+          providerList.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error loading providers:", error);
+      }
+    }
+
+    async function loadRequests() {
+      try {
+        console.log("Fetching all requests");
+        allRequests = [];
+        const paths = [
+          { path: "requests/service_requests", type: "Service", status: "pending" },
+          { path: "outs/purchase_requests", type: "Purchase", status: "pending" },
+          { path: "outs/accepted/service_requests", type: "Service", status: "accepted" },
+          { path: "outs/accepted/purchase_requests", type: "Purchase", status: "accepted" },
+          { path: "outs/rejected/service_requests", type: "Service", status: "rejected" },
+          { path: "outs/rejected/purchase_requests", type: "Purchase", status: "rejected" }
+        ];
+
+        for (const { path, type, status } of paths) {
+          const snapshot = await db.ref(path).once("value");
+          const data = snapshot.val();
+          if (data) {
+            Object.entries(data).forEach(([key, req]) => {
+              if (!req.timestamp) {
+                console.warn(`Missing timestamp for ${type} request ${key}`, req);
+                req.timestamp = "N/A";
+              }
+              const date = type === "Service" ? (req.date || "N/A") : (req.timestamp !== "N/A" ? req.timestamp.split('T')[0].replace(/-/g, '/') : "N/A");
+              allRequests.push({
+                key,
+                type,
+                status,
+                date,
+                name: type === "Service" ? (req.serviceName || "N/A") : (req.itemName || "N/A"),
+                description: req.description || "N/A",
+                cost: type === "Service" ? (req.amount || 0) : (req.totalCost || 0),
+                provider: type === "Service" ? (req.provider || "N/A") : (req.supplier || "N/A"),
+                contact: req.contact || "N/A",
+                timestamp: req.timestamp !== "N/A" ? new Date(req.timestamp).toLocaleString() : "N/A"
+              });
+            });
+          }
+        }
+
+        filterRequests();
+      } catch (error) {
+        console.error("Error loading requests:", error);
+        showMessage("requestsMessage", `Failed to load requests: ${error.message}`);
+      }
+    }
+
+    function filterRequests() {
+      const filterStatus = document.getElementById("filterStatus").value;
+      const sortBy = document.getElementById("sortBy").value;
+      const searchQuery = document.getElementById("searchQuery").value.toLowerCase();
+
+      let filteredRequests = allRequests;
+      if (filterStatus !== "all") {
+        filteredRequests = filteredRequests.filter(req => req.status === filterStatus);
+      }
+      if (searchQuery) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.name.toLowerCase().includes(searchQuery) || 
+          req.description.toLowerCase().includes(searchQuery)
+        );
+      }
+
+      filteredRequests.sort((a, b) => {
+        if (sortBy === "timestamp") {
+          return new Date(b.timestamp === "N/A" ? 0 : b.timestamp) - new Date(a.timestamp === "N/A" ? 0 : a.timestamp);
+        } else if (sortBy === "cost") {
+          return b.cost - a.cost;
+        } else {
+          return a.name.localeCompare(b.name);
+        }
+      });
+
+      const tableBody = document.getElementById("requestsBody");
+      tableBody.innerHTML = "";
+      if (filteredRequests.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="9" class="text-center">No requests found.</td></tr>`;
+        return;
+      }
+
+      filteredRequests.forEach(req => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${req.date}</td>
+          <td>${req.name}</td>
+          <td>${req.description}</td>
+          <td>${req.cost.toFixed(2)}</td>
+          <td>${req.provider}</td>
+          <td>${req.contact}</td>
+          <td>${req.timestamp}</td>
+          <td class="status-${req.status.toLowerCase()}">${req.status.charAt(0).toUpperCase() + req.status.slice(1)}</td>
+          <td>${req.type}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function toggleFormFields() {
+      const requestType = document.getElementById("requestType").value;
+      document.getElementById("serviceFields").classList.toggle("hidden", requestType !== "service");
+      document.getElementById("purchaseFields").classList.toggle("hidden", requestType !== "purchase");
+      document.getElementById("previewSection").style.display = "none";
+    }
+
+    function previewRequest() {
+      const requestType = document.getElementById("requestType").value;
+      const providerSupplier = document.getElementById("providerSupplier").value.trim();
+      const contact = document.getElementById("contact").value.trim();
+      const description = document.getElementById("description").value.trim();
+
+      let name, cost;
+      if (requestType === "service") {
+        name = document.getElementById("serviceName").value.trim();
+        cost = parseFloat(document.getElementById("serviceAmount").value) || 0;
+      } else {
+        name = document.getElementById("itemName").value.trim();
+        const quantity = parseInt(document.getElementById("quantity").value) || 0;
+        const unitCost = parseFloat(document.getElementById("unitCost").value) || 0;
+        cost = quantity * unitCost;
+      }
+
+      if (!name || !providerSupplier || !contact || cost <= 0) {
+        showMessage("errorMessage", "Please fill all required fields with valid values.");
+        return;
+      }
+
+      document.getElementById("previewType").textContent = requestType.charAt(0).toUpperCase() + requestType.slice(1);
+      document.getElementById("previewName").textContent = name;
+      document.getElementById("previewCost").textContent = cost.toFixed(2);
+      document.getElementById("previewProvider").textContent = providerSupplier;
+      document.getElementById("previewContact").textContent = contact;
+      document.getElementById("previewDescription").textContent = description || "N/A";
+      document.getElementById("previewSection").style.display = "block";
+    }
+
+    function resetForm() {
+      document.getElementById("requestType").value = "service";
+      document.getElementById("serviceName").value = "";
+      document.getElementById("serviceAmount").value = "";
+      document.getElementById("itemName").value = "";
+      document.getElementById("quantity").value = "";
+      document.getElementById("unitCost").value = "";
+      document.getElementById("providerSupplier").value = "";
+      document.getElementById("contact").value = "";
+      document.getElementById("description").value = "";
+      document.getElementById("previewSection").style.display = "none";
+      toggleFormFields();
+      document.querySelectorAll(".form-group .error-text").forEach(el => el.style.display = "none");
+      document.querySelectorAll("input, select").forEach(el => el.classList.remove("border-red-500"));
+    }
+
+    async function addRequest() {
+      try {
+        const requestType = document.getElementById("requestType").value;
+        const providerSupplier = document.getElementById("providerSupplier").value.trim();
+        const contact = document.getElementById("contact").value.trim();
+        const description = document.getElementById("description").value.trim();
+        const accountant = sessionStorage.getItem("username") || "macsschool@account.ac";
+        const now = new Date();
+        const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+        const timestamp = now.toISOString();
+
+        let request, name;
+        if (requestType === "service") {
+          const serviceName = document.getElementById("serviceName").value.trim();
+          const amount = parseFloat(document.getElementById("serviceAmount").value);
+          name = serviceName;
+
+          if (!serviceName) {
+            showMessage("errorMessage", "Please enter a service name.");
+            return;
+          }
+          if (!amount || amount <= 0) {
+            showMessage("errorMessage", "Please enter a valid amount.");
+            return;
+          }
+          if (!providerSupplier) {
+            showMessage("errorMessage", "Please enter a provider name.");
+            return;
+          }
+          if (!contact) {
+            showMessage("errorMessage", "Please enter contact details.");
+            return;
+          }
+
+          request = {
+            accountant,
+            amount,
+            contact,
+            date,
+            description: description || "",
+            provider: providerSupplier,
+            serviceName,
+            status: "pending",
+            timestamp
+          };
+
+          console.log("Adding service request:", request);
+          await db.ref("requests/service_requests").push(request);
+        } else {
+          const itemName = document.getElementById("itemName").value.trim();
+          const quantity = parseInt(document.getElementById("quantity").value);
+          const unitCost = parseFloat(document.getElementById("unitCost").value);
+          const totalCost = quantity * unitCost;
+          name = itemName;
+
+          if (!itemName) {
+            showMessage("errorMessage", "Please enter an item name.");
+            return;
+          }
+          if (!quantity || quantity <= 0) {
+            showMessage("errorMessage", "Please enter a valid quantity.");
+            return;
+          }
+          if (!unitCost || unitCost <= 0) {
+            showMessage("errorMessage", "Please enter a valid unit cost.");
+            return;
+          }
+          if (!providerSupplier) {
+            showMessage("errorMessage", "Please enter a supplier name.");
+            return;
+          }
+          if (!contact) {
+            showMessage("errorMessage", "Please enter contact details.");
+            return;
+          }
+
+          request = {
+            accountant,
+            contact,
+            description: description || "",
+            itemName,
+            quantity,
+            status: "pending",
+            supplier: providerSupplier,
+            timestamp,
+            totalCost,
+            unitCost
+          };
+
+          console.log("Adding purchase request:", request);
+          await db.ref("outs/purchase_requests").push(request);
+        }
+
+        showSuccessMessage(`MACS Management has received your request of ${name} and will review it as soon as possible. Thank you, enjoy the rest of your day!`);
+        resetForm();
+        loadProviders();
+        loadRequests();
+      } catch (error) {
+        console.error("Error adding request:", error);
+        showMessage("errorMessage", `Failed to add request: ${error.message}`);
+      }
+    }
+
+    function exportToCSV() {
+      const filterStatus = document.getElementById("filterStatus").value;
+      const searchQuery = document.getElementById("searchQuery").value.toLowerCase();
+      let filteredRequests = allRequests;
+
+      if (filterStatus !== "all") {
+        filteredRequests = filteredRequests.filter(req => req.status === filterStatus);
+      }
+      if (searchQuery) {
+        filteredRequests = filteredRequests.filter(req => 
+          req.name.toLowerCase().includes(searchQuery) || 
+          req.description.toLowerCase().includes(searchQuery)
+        );
+      }
+
+      const headers = ["Date", "Name", "Description", "Cost", "Provider/Supplier", "Contact", "Timestamp", "Status", "Type"];
+      const csv = [
+        headers.join(","),
+        ...filteredRequests.map(req => 
+          `"${req.date}","${req.name.replace(/"/g, '""')}","${req.description.replace(/"/g, '""')}","${req.cost.toFixed(2)}","${req.provider.replace(/"/g, '""')}","${req.contact.replace(/"/g, '""')}","${req.timestamp}","${req.status}","${req.type}"`
+        )
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "requests.csv";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

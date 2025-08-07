@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fee Records - MACS Primary School</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: #F9FAFB;
+      color: #111827;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background: #1D4ED8;
+      color: #FFFFFF;
+      padding: 20px;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      height: 100%;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+    .sidebar .profile {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .sidebar .profile img {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #22C55E;
+      margin-bottom: 12px;
+    }
+    .sidebar h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      color: #FFFFFF;
+      padding: 12px 16px;
+      text-decoration: none;
+      background: none;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: background 0.2s ease, transform 0.1s;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #22C55E;
+      transform: translateX(4px);
+    }
+    .sidebar a i, .sidebar button i {
+      margin-right: 10px;
+    }
+    .main-content {
+      margin-left: 270px;
+      padding: 32px;
+      background: #FFFFFF;
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .section {
+      background: #FFFFFF;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+      flex: 1;
+    }
+    .section h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .section h1 i {
+      margin-right: 10px;
+      color: #22C55E;
+    }
+    .input-group {
+      margin-bottom: 20px;
+      max-width: 400px;
+    }
+    .input-group label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #111827;
+    }
+    .input-group label i {
+      margin-right: 8px;
+      color: #22C55E;
+    }
+    .input-group input, .input-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #F9FAFB;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus, .input-group select:focus {
+      border-color: #1D4ED8;
+      outline: none;
+    }
+    button {
+      padding: 12px 20px;
+      background: #22C55E;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #16A34A;
+    }
+    .error-message {
+      color: #EF4444;
+      font-size: 14px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+    }
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    th {
+      background: #1D4ED8;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background: #F9FAFB;
+    }
+    tr:hover {
+      background: #E5E7EB;
+    }
+    .search-bar {
+      margin-bottom: 20px;
+      max-width: 400px;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .select2-container--default .select2-selection--single {
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      background: #F9FAFB;
+      height: 40px;
+      padding: 8px;
+      font-size: 14px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+      color: #111827;
+      line-height: 24px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+      height: 40px;
+    }
+    .select2-container {
+      width: 100% !important;
+      max-width: 400px;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 200px;
+        transform: translateX(-100%);
+      }
+      .sidebar.active {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 16px;
+      }
+      .section {
+        padding: 16px;
+      }
+      table {
+        font-size: 12px;
+      }
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+  </div>
+  <div class="container">
+    <div class="sidebar">
+      <div class="profile">
+        <img src="https://img.icons8.com/color/80/000000/accountant.png" alt="Accountant Icon">
+        <p id="accountantName"></p>
+      </div>
+      <h2>Accountant Portal</h2>
+      <a href="accountant.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="students.html"><i class="fas fa-users"></i> Students</a>
+      <a href="uploadFees.html"><i class="fas fa-money-check-alt"></i> Upload Fees</a>
+      <a href="feeRecords.html"><i class="fas fa-file-invoice"></i> Fee Records</a>
+      <a href="announcements.html"><i class="fas fa-bell"></i> Announcements</a>
+      <a href="funds.html"><i class="fas fa-university"></i> Funds Management</a>
+      <a href="otherFunds.html"><i class="fas fa-coins"></i> Other Funds</a>
+      <a href="requests.html"><i class="fas fa-tasks"></i> Requests</a>
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+    <div class="main-content">
+      <div id="feeRecords" class="section">
+        <h1><i class="fas fa-file-invoice"></i> Fee Records</h1>
+        <div class="input-group">
+          <label><i class="fas fa-school"></i> Select Class</label>
+          <select id="feesFormSelect" onchange="loadStudents()">
+            <option value="all">All Classes</option>
+            <option value="playgroup">Play Group</option>
+            <option value="pp1">Pre-Primary 1</option>
+            <option value="pp2">Pre-Primary 2</option>
+            <option value="grade1">Grade 1</option>
+            <option value="grade2">Grade 2</option>
+            <option value="grade3">Grade 3</option>
+            <option value="grade4">Grade 4</option>
+            <option value="grade5">Grade 5</option>
+            <option value="grade6">Grade 6</option>
+            <option value="grade7">Grade 7</option>
+            <option value="grade8">Grade 8</option>
+            <option value="grade9">Grade 9</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label><i class="fas fa-user-graduate"></i> Select Student (or All for Class)</label>
+          <select id="feesStudentSelect"></select>
+        </div>
+        <div class="search-bar">
+          <input id="searchBar" type="text" placeholder="Search by Transaction Code, Payer, or Amount" oninput="filterTransactions()">
+        </div>
+        <button onclick="downloadCSV()">Download as CSV</button>
+        <table id="feeRecordsTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount (KES)</th>
+              <th>Transaction Code</th>
+              <th>Payer Name</th>
+              <th>Payment Method</th>
+              <th>Status</th>
+              <th>Accountant</th>
+            </tr>
+          </thead>
+          <tbody id="feeRecordsBody"></tbody>
+        </table>
+        <div id="feeRecordsMessage" class="error-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqVIFxRrkNSejRuNY9NPYrMpUShO2Yz7U",
+      authDomain: "lifeflow-yhtl6.firebaseapp.com",
+      databaseURL: "https://lifeflow-yhtl6-default-rtdb.firebaseio.com",
+      projectId: "lifeflow-yhtl6",
+      storageBucket: "lifeflow-yhtl6.firebasestorage.app",
+      messagingSenderId: "129785956666",
+      appId: "1:129785956666:web:541a08bee37c739556a803"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const loadingScreen = document.getElementById("loadingScreen");
+    let allTransactions = [];
+    let isLoadingRecords = false; // Prevent multiple simultaneous loads
+
+    auth.onAuthStateChanged(user => {
+      if (!user || sessionStorage.getItem("userType") !== "accountant") {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      } else {
+        const accountantEmail = sessionStorage.getItem("username") || "Accountant";
+        const accountantName = accountantEmail.split("@")[0].replace(/\d/g, "");
+        document.getElementById("accountantName").textContent = accountantName;
+        loadStudents();
+        setTimeout(() => loadingScreen.classList.add("hidden"), 300);
+      }
+    });
+
+    function showMessage(elementId, message, isError = true) {
+      const messageDiv = document.getElementById(elementId);
+      messageDiv.textContent = message;
+      messageDiv.style.color = isError ? "#EF4444" : "#22C55E";
+      messageDiv.style.display = "block";
+      setTimeout(() => {
+        messageDiv.style.display = "none";
+      }, 3000);
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }).catch(error => {
+        showMessage("feeRecordsMessage", `Logout failed: ${error.message}`);
+      });
+    }
+
+    async function loadStudents() {
+      const form = document.getElementById("feesFormSelect").value;
+      const studentSelect = document.getElementById("feesStudentSelect");
+      studentSelect.innerHTML = `<option value="all">All Students in ${form === "all" ? "All Classes" : form.replace("pp", "Pre-Primary ").replace("grade", "Grade ")}</option>`;
+
+      try {
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+        const studentsList = [];
+
+        Object.entries(students).forEach(([regNo, student]) => {
+          const studentForm = student.form || `form${student.profile?.year || "1"}`;
+          if (form === "all" || studentForm === form) {
+            studentsList.push({
+              regNo,
+              name: student.profile?.name || "Unknown",
+              stream: student.stream || student.profile?.stream || "-"
+            });
+          }
+        });
+
+        if (studentsList.length === 0) {
+          studentSelect.innerHTML = `<option value="">No students found in ${form === "all" ? "any class" : form.replace("pp", "Pre-Primary ").replace("grade", "Grade ")}.</option>`;
+          $(studentSelect).select2({ placeholder: "No students found", allowClear: true });
+          loadFeeRecords();
+          return;
+        }
+
+        studentsList.sort((a, b) => a.regNo.localeCompare(b.regNo));
+        studentsList.forEach(student => {
+          studentSelect.innerHTML += `<option value="${student.regNo}|${student.stream}">${student.name} (${student.regNo})</option>`;
+        });
+
+        $(studentSelect).select2({
+          placeholder: "Select a student or all",
+          allowClear: true,
+          width: '100%'
+        }).off("change").on("change", debounce(loadFeeRecords, 300));
+      } catch (error) {
+        console.error("Error loading students:", error);
+        studentSelect.innerHTML = `<option>Failed to load students: ${error.message}</option>`;
+        $(studentSelect).select2({ placeholder: "Failed to load students", allowClear: true });
+        showMessage("feeRecordsMessage", `Failed to load students: ${error.message}`);
+      }
+    }
+
+    // Debounce function to prevent multiple rapid calls
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    async function loadFeeRecords() {
+      if (isLoadingRecords) {
+        console.log("Skipping loadFeeRecords: already in progress");
+        return;
+      }
+      isLoadingRecords = true;
+
+      const form = document.getElementById("feesFormSelect").value;
+      const studentSelect = document.getElementById("feesStudentSelect").value;
+      const tableBody = document.getElementById("feeRecordsBody");
+      tableBody.innerHTML = "";
+      allTransactions = [];
+      const seenTransactionIds = new Set();
+      const seenTransactionCodes = new Set();
+
+      try {
+        console.log(`Loading transactions for form: ${form}, student: ${studentSelect} from users/students/*/fees/transactions`);
+
+        const snapshot = await db.ref("users/students").once("value");
+        const students = snapshot.val() || {};
+
+        if (studentSelect === "all") {
+          // Load transactions for all students in the selected class (or all classes)
+          for (const [regNo, student] of Object.entries(students)) {
+            const studentForm = student.form || `form${student.profile?.year || "1"}`;
+            if (form === "all" || studentForm === form) {
+              const transactions = student.fees?.transactions || {};
+              const studentName = student.profile?.name || "Unknown";
+              Object.entries(transactions).forEach(([key, tx]) => {
+                const uniqueId = `${regNo}_${key}`;
+                const transactionCode = tx.transactionCode || `UNKNOWN_${uniqueId}`;
+                if (!seenTransactionIds.has(uniqueId) && !seenTransactionCodes.has(transactionCode)) {
+                  seenTransactionIds.add(uniqueId);
+                  seenTransactionCodes.add(transactionCode);
+                  allTransactions.push({
+                    regNo,
+                    studentName,
+                    date: tx.date || "N/A",
+                    amount: tx.amount || 0,
+                    transactionCode: tx.transactionCode || "N/A",
+                    payer: tx.payer || "N/A",
+                    method: tx.method || "N/A",
+                    status: tx.status || "N/A",
+                    accountant: tx.accountant || "N/A",
+                    timestamp: tx.timestamp || new Date().toISOString(),
+                    transactionId: uniqueId
+                  });
+                } else {
+                  console.warn(`Duplicate transaction detected: ${uniqueId}, transactionCode: ${transactionCode}`, tx);
+                }
+              });
+            }
+          }
+        } else {
+          // Load transactions for a specific student
+          const [regNo] = studentSelect.split("|");
+          const student = students[regNo];
+          if (!student) {
+            showMessage("feeRecordsMessage", `Student ${regNo} not found.`);
+            tableBody.innerHTML = `<tr><td colspan="7">Student not found.</td></tr>`;
+            isLoadingRecords = false;
+            return;
+          }
+          const transactions = student.fees?.transactions || {};
+          const studentName = student.profile?.name || "Unknown";
+          Object.entries(transactions).forEach(([key, tx]) => {
+            const uniqueId = `${regNo}_${key}`;
+            const transactionCode = tx.transactionCode || `UNKNOWN_${uniqueId}`;
+            if (!seenTransactionIds.has(uniqueId) && !seenTransactionCodes.has(transactionCode)) {
+              seenTransactionIds.add(uniqueId);
+              seenTransactionCodes.add(transactionCode);
+              allTransactions.push({
+                regNo,
+                studentName,
+                date: tx.date || "N/A",
+                amount: tx.amount || 0,
+                transactionCode: tx.transactionCode || "N/A",
+                payer: tx.payer || "N/A",
+                method: tx.method || "N/A",
+                status: tx.status || "N/A",
+                accountant: tx.accountant || "N/A",
+                timestamp: tx.timestamp || new Date().toISOString(),
+                transactionId: uniqueId
+              });
+            } else {
+              console.warn(`Duplicate transaction detected: ${uniqueId}, transactionCode: ${transactionCode}`, tx);
+            }
+          });
+        }
+
+        console.log(`Loaded ${allTransactions.length} unique transactions:`, allTransactions.map(tx => ({
+          transactionId: tx.transactionId,
+          transactionCode: tx.transactionCode,
+          amount: tx.amount,
+          date: tx.date
+        })));
+
+        allTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        filterTransactions();
+      } catch (error) {
+        console.error("Error loading transactions:", error);
+        showMessage("feeRecordsMessage", `Failed to load transactions: ${error.message}`);
+        tableBody.innerHTML = `<tr><td colspan="7">Failed to load transactions.</td></tr>`;
+      } finally {
+        isLoadingRecords = false;
+      }
+    }
+
+    function filterTransactions() {
+      const searchTerm = document.getElementById("searchBar").value.toLowerCase();
+      const tableBody = document.getElementById("feeRecordsBody");
+      tableBody.innerHTML = "";
+
+      const filteredTransactions = allTransactions.filter(tx => 
+        (tx.transactionCode || "").toLowerCase().includes(searchTerm) ||
+        (tx.payer || "").toLowerCase().includes(searchTerm) ||
+        (tx.amount || "").toString().includes(searchTerm)
+      );
+
+      if (filteredTransactions.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7">No transactions found.</td></tr>`;
+        return;
+      }
+
+      filteredTransactions.forEach(tx => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${tx.date}</td>
+          <td>${tx.amount.toFixed(2)}</td>
+          <td>${tx.transactionCode}</td>
+          <td>${tx.payer}</td>
+          <td>${tx.method.charAt(0).toUpperCase() + tx.method.slice(1)}</td>
+          <td>${tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}</td>
+          <td>${tx.accountant}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function downloadCSV() {
+      const form = document.getElementById("feesFormSelect").value;
+      const studentSelect = document.getElementById("feesStudentSelect").value;
+      const searchTerm = document.getElementById("searchBar").value.toLowerCase();
+      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      let fileName;
+
+      const filteredTransactions = allTransactions.filter(tx => 
+        (tx.transactionCode || "").toLowerCase().includes(searchTerm) ||
+        (tx.payer || "").toLowerCase().includes(searchTerm) ||
+        (tx.amount || "").toString().includes(searchTerm)
+      );
+
+      if (studentSelect === "all") {
+        fileName = `Fee_Records_${form === "all" ? "All_Classes" : form}_${date}.csv`;
+      } else {
+        const [regNo] = studentSelect.split("|");
+        fileName = `Fee_Records_${regNo}_${date}.csv`;
+      }
+
+      const headers = ["Date,Amount (KES),Transaction Code,Payer Name,Payment Method,Status,Accountant"];
+      const rows = filteredTransactions.map(tx => 
+        `"${tx.date}","${tx.amount.toFixed(2)}","${tx.transactionCode}","${tx.payer}","${tx.method.charAt(0).toUpperCase() + tx.method.slice(1)}","${tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}","${tx.accountant}"`
+      );
+
+      const csvContent = headers.concat(rows).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+</body>
+</html>

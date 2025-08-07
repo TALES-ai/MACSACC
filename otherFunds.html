@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Other Funds - MACS Primary School</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: #F9FAFB;
+      color: #111827;
+      display: flex;
+      min-height: 100vh;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background: #1D4ED8;
+      color: #FFFFFF;
+      padding: 20px;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      height: 100%;
+      overflow-y: auto;
+    }
+    .sidebar .profile {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .sidebar .profile img {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #22C55E;
+      margin-bottom: 12px;
+    }
+    .sidebar h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      color: #FFFFFF;
+      padding: 12px 16px;
+      text-decoration: none;
+      background: none;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: background 0.2s ease, transform 0.1s;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #22C55E;
+      transform: translateX(4px);
+    }
+    .sidebar a i, .sidebar button i {
+      margin-right: 10px;
+    }
+    .main-content {
+      margin-left: 270px;
+      padding: 32px;
+      background: #FFFFFF;
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .section {
+      background: #FFFFFF;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      max-width: 1200px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+    .section h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #E5E7EB;
+      padding-bottom: 8px;
+    }
+    .section h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .section h1 i {
+      margin-right: 10px;
+      color: #22C55E;
+    }
+    .balance-display {
+      font-size: 18px;
+      font-weight: 500;
+      color: #1D4ED8;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+      max-width: 400px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #F9FAFB;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: #1D4ED8;
+      outline: none;
+    }
+    .search-container {
+      position: relative;
+      max-width: 400px;
+    }
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #FFFFFF;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .search-results div {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    .search-results div:hover {
+      background: #E5E7EB;
+    }
+    button {
+      padding: 12px 20px;
+      background: #22C55E;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 10px;
+      margin-bottom: 16px;
+    }
+    button:hover {
+      background: #16A34A;
+    }
+    .edit-button {
+      background: #1D4ED8;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    .edit-button:hover {
+      background: #1E40AF;
+    }
+    .error-message {
+      color: #EF4444;
+      font-size: 14px;
+      margin: 16px 0;
+      text-align: center;
+      font-weight: 500;
+    }
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+      font-size: 16px;
+      color: #1D4ED8;
+    }
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      table-layout: fixed;
+    }
+    th, td {
+      padding: 14px 12px;
+      text-align: left;
+      border-bottom: 1px solid #E5E7EB;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    th {
+      background: #1D4ED8;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background: #F9FAFB;
+    }
+    tr:hover {
+      background: #E5E7EB;
+    }
+    th:nth-child(1), td:nth-child(1) { width: 10%; } /* Date */
+    th:nth-child(2), td:nth-child(2) { width: 12%; } /* Fund Type */
+    th:nth-child(3), td:nth-child(3) { width: 10%; } /* Amount */
+    th:nth-child(4), td:nth-child(4) { width: 12%; } /* Expected Amount */
+    th:nth-child(5), td:nth-child(5) { width: 12%; } /* Means of Payment */
+    th:nth-child(6), td:nth-child(6) { width: 12%; } /* Transaction Code */
+    th:nth-child(7), td:nth-child(7) { width: 12%; } /* Payer */
+    th:nth-child(8), td:nth-child(8) { width: 10%; } /* Posted By */
+    th:nth-child(9), td:nth-child(9) { width: 10%; } /* Actions */
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div><i class="fas fa-spinner fa-spin"></i> Loading Other Funds...</div>
+  </div>
+  <div class="container">
+    <div class="sidebar">
+      <div class="profile">
+        <img src="https://img.icons8.com/color/80/000000/accountant.png" alt="Accountant Icon">
+        <p id="accountantName"></p>
+      </div>
+      <h2>Accountant Portal</h2>
+      <a href="accountant.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="students.html"><i class="fas fa-users"></i> Students</a>
+      <a href="uploadFees.html"><i class="fas fa-money-check-alt"></i> Upload Fees</a>
+      <a href="feeRecords.html"><i class="fas fa-file-invoice"></i> Fee Records</a>
+      <a href="announcements.html"><i class="fas fa-bell"></i> Announcements</a>
+      <a href="funds.html"><i class="fas fa-university"></i> Funds Management</a>
+      <a href="otherFunds.html"><i class="fas fa-coins"></i> Other Funds</a>
+      <a href="requests.html"><i class="fas fa-tasks"></i> Requests</a>
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+    <div class="main-content">
+      <div class="section">
+        <h1><i class="fas fa-coins"></i> Other Funds</h1>
+      </div>
+      <div class="section">
+        <h2>Summary</h2>
+        <div class="balance-display" id="totalBalance">Total Other Funds Balance: KES 0.00</div>
+        <div class="form-group">
+          <label for="studentSearch">Search Student</label>
+          <div class="search-container">
+            <input type="text" id="studentSearch" placeholder="Search by regNo or name">
+            <div id="searchResults" class="search-results"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="termSelect">Select Term</label>
+          <select id="termSelect" onchange="loadTransactions()">
+            <option value="">All Terms</option>
+            <option value="1">Term 1</option>
+            <option value="2">Term 2</option>
+            <option value="3">Term 3</option>
+          </select>
+        </div>
+      </div>
+      <div class="section">
+        <h2>Add/Edit Transaction</h2>
+        <div class="form-group">
+          <label for="amount">Amount (KES)</label>
+          <input type="number" id="amount" step="0.01" min="0" placeholder="Enter amount paid">
+        </div>
+        <div class="form-group">
+          <label for="expectedAmount">Expected Amount (KES)</label>
+          <input type="number" id="expectedAmount" step="0.01" min="0" placeholder="Enter expected amount">
+        </div>
+        <div class="form-group">
+          <label for="fundType">Fund Type</label>
+          <select id="fundType">
+            <option value="Exam">Exam</option>
+            <option value="RIM">RIM</option>
+            <option value="motivation">Motivation</option>
+            <option value="uniform">Uniform</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="method">Means of Payment</label>
+          <select id="method">
+            <option value="bank">Bank</option>
+            <option value="M-Pesa">M-Pesa</option>
+            <option value="Cash">Cash</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="transactionCode">Transaction Code</label>
+          <input type="text" id="transactionCode" placeholder="Enter transaction code">
+        </div>
+        <div class="form-group">
+          <label for="payer">Payer</label>
+          <input type="text" id="payer" placeholder="Enter payer name">
+        </div>
+        <button id="transactionButton" onclick="handleTransaction()">Add Transaction</button>
+        <button onclick="cancelEdit()" style="display: none;" id="cancelEditButton">Cancel Edit</button>
+      </div>
+      <div class="section">
+        <h2>Transactions</h2>
+        <button onclick="downloadPDF()">Download as PDF</button>
+        <table id="otherFundsTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Fund Type</th>
+              <th>Amount</th>
+              <th>Expected Amount</th>
+              <th>Means of Payment</th>
+              <th>Transaction Code</th>
+              <th>Payer</th>
+              <th>Posted By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="otherFundsBody"></tbody>
+        </table>
+        <div id="otherFundsMessage" class="error-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqVIFxRrkNSejRuNY9NPYrMpUShO2Yz7U",
+      authDomain: "lifeflow-yhtl6.firebaseapp.com",
+      databaseURL: "https://lifeflow-yhtl6-default-rtdb.firebaseio.com",
+      projectId: "lifeflow-yhtl6",
+      storageBucket: "lifeflow-yhtl6.firebasestorage.app",
+      messagingSenderId: "129785956666",
+      appId: "1:129785956666:web:541a08bee37c739556a803"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const loadingScreen = document.getElementById("loadingScreen");
+    let allTransactions = [];
+    let students = [];
+    let selectedStudent = null;
+    let isLoadingTransactions = false;
+    let editingTransactionKey = null;
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        console.error("Authentication failed: No user logged in");
+        sessionStorage.clear();
+        window.location.href = "index.html";
+        return;
+      }
+
+      try {
+        const userEmail = user.email;
+        const allowedEmails = ["macsschool@account.ac", "stellamachogu2025@gmail.com", "bttc@admin.ep.finley"];
+        console.log("Checking user permissions:", { userId: user.uid, userEmail });
+
+        const userSnapshot = await db.ref(`users/${user.uid}/role`).once("value");
+        const userRole = userSnapshot.val();
+        console.log(`User role from Firebase: ${userRole}`);
+
+        if (!allowedEmails.includes(userEmail) && userRole !== "admin" && userRole !== "accountant") {
+          console.error("Permission denied: User lacks required role or email", { userId: user.uid, userEmail, userRole });
+          sessionStorage.clear();
+          window.location.href = "index.html";
+          return;
+        }
+
+        const accountantEmail = sessionStorage.getItem("username") || userEmail || "macsschool@account.ac";
+        const accountantName = accountantEmail.split("@")[0].replace(/\d/g, "");
+        document.getElementById("accountantName").textContent = accountantName;
+        loadStudents();
+        loadBalance();
+        setTimeout(() => loadingScreen.classList.add("hidden"), 300);
+      } catch (error) {
+        console.error("Error checking user role:", error);
+        showMessage("otherFundsMessage", `Authentication error: ${error.message}`);
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }
+    });
+
+    function showMessage(elementId, message, isError = true) {
+      const messageDiv = document.getElementById(elementId);
+      messageDiv.textContent = message;
+      messageDiv.style.color = isError ? "#EF4444" : "#22C55E";
+      messageDiv.style.display = "block";
+      setTimeout(() => {
+        messageDiv.style.display = "none";
+      }, 3000);
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }).catch(error => {
+        console.error("Logout error:", error);
+        showMessage("otherFundsMessage", `Logout failed: ${error.message}`);
+      });
+    }
+
+    async function loadStudents() {
+      try {
+        console.log("Fetching students from 'users/students'");
+        const snapshot = await db.ref("users/students").once("value");
+        const studentData = snapshot.val();
+        const studentSearch = document.getElementById("studentSearch");
+
+        if (studentData) {
+          students = Object.entries(studentData).map(([regNo, data]) => ({
+            regNo,
+            name: data.profile?.name || "Unknown"
+          }));
+          studentSearch.disabled = false;
+          console.log(`Loaded ${students.length} students:`, students.map(s => ({ regNo: s.regNo, name: s.name })));
+        } else {
+          console.warn("No students found");
+          showMessage("otherFundsMessage", "No students available.");
+          studentSearch.disabled = true;
+        }
+      } catch (error) {
+        console.error("Error loading students:", error);
+        showMessage("otherFundsMessage", `Failed to load students: ${error.message}`);
+      }
+    }
+
+    function filterStudents(query) {
+      const searchResults = document.getElementById("searchResults");
+      searchResults.innerHTML = "";
+
+      const filteredStudents = students.filter(student =>
+        student.regNo.toLowerCase().includes(query.toLowerCase()) ||
+        student.name.toLowerCase().includes(query.toLowerCase())
+      );
+
+      if (filteredStudents.length > 0) {
+        filteredStudents.forEach(student => {
+          const div = document.createElement("div");
+          div.textContent = `${student.regNo} - ${student.name}`;
+          div.onclick = () => selectStudent(student.regNo, student.name);
+          searchResults.appendChild(div);
+        });
+        searchResults.style.display = "block";
+      } else {
+        searchResults.style.display = "none";
+      }
+    }
+
+    function selectStudent(regNo, name) {
+      selectedStudent = { regNo, name };
+      document.getElementById("studentSearch").value = `${regNo} - ${name}`;
+      document.getElementById("searchResults").style.display = "none";
+      loadTransactions();
+    }
+
+    document.getElementById("studentSearch").addEventListener("input", e => {
+      filterStudents(e.target.value);
+    });
+
+    document.getElementById("studentSearch").addEventListener("focus", () => {
+      filterStudents(document.getElementById("studentSearch").value);
+    });
+
+    document.addEventListener("click", e => {
+      const searchResults = document.getElementById("searchResults");
+      if (!e.target.closest(".search-container")) {
+        searchResults.style.display = "none";
+      }
+    });
+
+    async function loadBalance() {
+      try {
+        console.log("Fetching balance from 'other_funds/balance'");
+        const snapshot = await db.ref("other_funds/balance").once("value");
+        const balance = snapshot.val() || 0;
+        document.getElementById("totalBalance").textContent = `Total Other Funds Balance: KES ${balance.toFixed(2)}`;
+      } catch (error) {
+        console.error("Error loading balance:", error);
+        showMessage("otherFundsMessage", `Failed to load balance: ${error.message}`);
+      }
+    }
+
+    async function loadTransactions() {
+      if (isLoadingTransactions) {
+        console.log("Skipping loadTransactions: already in progress");
+        return;
+      }
+      isLoadingTransactions = true;
+
+      const tableBody = document.getElementById("otherFundsBody");
+      tableBody.innerHTML = "";
+      allTransactions = [];
+
+      if (!selectedStudent) {
+        tableBody.innerHTML = `<tr><td colspan="9">Please select a student to view transactions.</td></tr>`;
+        isLoadingTransactions = false;
+        return;
+      }
+
+      const selectedTerm = document.getElementById("termSelect").value;
+
+      try {
+        console.log(`Fetching transactions for student: ${selectedStudent.regNo}, term: ${selectedTerm || "All"}`);
+        const snapshot = await db.ref(`users/students/${selectedStudent.regNo}/other_funds/transactions`).once("value");
+        const transactions = snapshot.val();
+
+        if (transactions) {
+          Object.entries(transactions).forEach(([key, tx]) => {
+            if (tx && tx.amount != null && tx.fundType && tx.date && tx.payer && tx.status === "completed") {
+              if (!selectedTerm || tx.term === selectedTerm) {
+                allTransactions.push({
+                  key,
+                  regNo: selectedStudent.regNo,
+                  date: tx.date,
+                  fundType: tx.fundType,
+                  amount: Number(tx.amount),
+                  expectedAmount: Number(tx.expectedAmount || 0),
+                  balance: Number(tx.balance || 0),
+                  method: tx.method || "N/A",
+                  transactionCode: tx.transactionCode || "N/A",
+                  payer: tx.payer,
+                  postedBy: tx.accountant || "macsschool",
+                  timestamp: tx.timestamp || new Date().toISOString(),
+                  term: tx.term || "Unknown"
+                });
+              }
+            } else {
+              console.warn(`Skipping invalid transaction for key: ${key}`, tx);
+            }
+          });
+        }
+
+        console.log(`Loaded ${allTransactions.length} valid transactions for ${selectedStudent.regNo}:`, allTransactions.map(tx => ({
+          key: tx.key,
+          regNo: tx.regNo,
+          date: tx.date,
+          fundType: tx.fundType,
+          amount: tx.amount,
+          expectedAmount: tx.expectedAmount,
+          balance: tx.balance,
+          method: tx.method,
+          transactionCode: tx.transactionCode,
+          payer: tx.payer,
+          postedBy: tx.postedBy,
+          term: tx.term
+        })));
+
+        allTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        renderTransactions();
+      } catch (error) {
+        console.error("Error loading transactions:", error);
+        showMessage("otherFundsMessage", `Failed to load transactions: ${error.message}`);
+        tableBody.innerHTML = `<tr><td colspan="9">Failed to load transactions: ${error.message}</td></tr>`;
+      } finally {
+        isLoadingTransactions = false;
+      }
+    }
+
+    function renderTransactions() {
+      const tableBody = document.getElementById("otherFundsBody");
+      tableBody.innerHTML = "";
+
+      if (allTransactions.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="9">No transactions found for selected student and term.</td></tr>`;
+        return;
+      }
+
+      allTransactions.forEach(tx => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${tx.date}</td>
+          <td>${tx.fundType.charAt(0).toUpperCase() + tx.fundType.slice(1)}</td>
+          <td>${tx.amount.toFixed(2)}</td>
+          <td>${tx.expectedAmount.toFixed(2)}</td>
+          <td>${tx.method.charAt(0).toUpperCase() + tx.method.slice(1)}</td>
+          <td>${tx.transactionCode}</td>
+          <td>${tx.payer}</td>
+          <td>${tx.postedBy}</td>
+          <td><button class="edit-button" onclick="editTransaction('${tx.key}', '${tx.regNo}')">Edit</button></td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function editTransaction(key, regNo) {
+      const transaction = allTransactions.find(tx => tx.key === key && tx.regNo === regNo);
+      if (!transaction) {
+        showMessage("otherFundsMessage", "Transaction not found.");
+        return;
+      }
+
+      const confirmEdit = window.confirm(
+        `You are about to update the ${transaction.fundType} fee for ${selectedStudent.regNo} - ${selectedStudent.name}, which will impact the accounts amount. Do you want to proceed?`
+      );
+      if (!confirmEdit) {
+        return;
+      }
+
+      document.getElementById("amount").value = transaction.amount;
+      document.getElementById("expectedAmount").value = transaction.expectedAmount;
+      document.getElementById("fundType").value = transaction.fundType;
+      document.getElementById("method").value = transaction.method;
+      document.getElementById("transactionCode").value = transaction.transactionCode;
+      document.getElementById("payer").value = transaction.payer;
+      document.getElementById("transactionButton").textContent = "Update Transaction";
+      document.getElementById("cancelEditButton").style.display = "inline-block";
+      editingTransactionKey = key;
+    }
+
+    function cancelEdit() {
+      document.getElementById("amount").value = "";
+      document.getElementById("expectedAmount").value = "";
+      document.getElementById("fundType").value = "Exam";
+      document.getElementById("method").value = "bank";
+      document.getElementById("transactionCode").value = "";
+      document.getElementById("payer").value = "";
+      document.getElementById("transactionButton").textContent = "Add Transaction";
+      document.getElementById("cancelEditButton").style.display = "none";
+      editingTransactionKey = null;
+    }
+
+    async function handleTransaction() {
+      if (!selectedStudent) {
+        showMessage("otherFundsMessage", "Please select a student.");
+        return;
+      }
+      const regNo = selectedStudent.regNo;
+      const amount = parseFloat(document.getElementById("amount").value);
+      const expectedAmount = parseFloat(document.getElementById("expectedAmount").value) || 0;
+      const fundType = document.getElementById("fundType").value;
+      const method = document.getElementById("method").value;
+      const transactionCode = document.getElementById("transactionCode").value.trim();
+      const payer = document.getElementById("payer").value.trim();
+      const term = document.getElementById("termSelect").value || "1";
+      const accountant = sessionStorage.getItem("username") || "macsschool@account.ac";
+      const today = new Date();
+      const date = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+      const timestamp = today.toISOString();
+      const lastUpdated = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()} ${today.getHours().toString().padStart(2, '0')}:${today.getMinutes().toString().padStart(2, '0')}:${today.getSeconds().toString().padStart(2, '0')}`;
+
+      if (!amount || amount <= 0) {
+        showMessage("otherFundsMessage", "Please enter a valid amount.");
+        return;
+      }
+      if (!fundType) {
+        showMessage("otherFundsMessage", "Please select a fund type.");
+        return;
+      }
+      if (!method) {
+        showMessage("otherFundsMessage", "Please select a payment method.");
+        return;
+      }
+      if (!transactionCode) {
+        showMessage("otherFundsMessage", "Please enter a transaction code.");
+        return;
+      }
+      if (!payer) {
+        showMessage("otherFundsMessage", "Please enter a payer name.");
+        return;
+      }
+
+      try {
+        console.log("Checking for duplicate transaction code:", transactionCode);
+        const snapshot = await db.ref(`users/students/${regNo}/other_funds/transactions`)
+          .orderByChild("transactionCode").equalTo(transactionCode).once("value");
+        if (snapshot.val() && !editingTransactionKey) {
+          showMessage("otherFundsMessage", "Transaction code already exists.");
+          return;
+        }
+
+        // Update student balance
+        let studentBalance = 0;
+        const studentBalanceSnapshot = await db.ref(`users/students/${regNo}/other_funds/balance`).once("value");
+        if (studentBalanceSnapshot.val() !== null) {
+          studentBalance = Number(studentBalanceSnapshot.val());
+        }
+
+        // Update global other_funds balance
+        let globalBalance = 0;
+        const globalBalanceSnapshot = await db.ref("other_funds/balance").once("value");
+        if (globalBalanceSnapshot.val() !== null) {
+          globalBalance = Number(globalBalanceSnapshot.val());
+        }
+
+        let amountDifference = amount;
+        if (editingTransactionKey) {
+          const oldTransactionSnapshot = await db.ref(`users/students/${regNo}/other_funds/transactions/${editingTransactionKey}`).once("value");
+          const oldAmount = oldTransactionSnapshot.val()?.amount || 0;
+          amountDifference = amount - oldAmount;
+        }
+
+        studentBalance += amountDifference;
+        globalBalance += amountDifference;
+
+        const newTransaction = {
+          amount,
+          expectedAmount,
+          balance: studentBalance,
+          fundType,
+          method,
+          transactionCode,
+          payer,
+          date,
+          timestamp,
+          status: "completed",
+          accountant,
+          regNo,
+          term
+        };
+
+        if (editingTransactionKey) {
+          console.log("Updating transaction:", newTransaction, "Key:", editingTransactionKey);
+          await db.ref(`users/students/${regNo}/other_funds/transactions/${editingTransactionKey}`).update(newTransaction);
+          await db.ref(`users/students/${regNo}/other_funds/balance`).set(studentBalance);
+          await db.ref("other_funds/balance").set(globalBalance);
+          await db.ref("other_funds/last_updated").set(lastUpdated);
+          showMessage("otherFundsMessage", "Transaction updated successfully.", false);
+          cancelEdit();
+        } else {
+          console.log("Adding transaction:", newTransaction);
+          await db.ref(`users/students/${regNo}/other_funds/transactions`).push(newTransaction);
+          await db.ref(`users/students/${regNo}/other_funds/balance`).set(studentBalance);
+          await db.ref("other_funds/balance").set(globalBalance);
+          await db.ref("other_funds/last_updated").set(lastUpdated);
+          showMessage("otherFundsMessage", "Transaction added successfully.", false);
+        }
+
+        document.getElementById("amount").value = "";
+        document.getElementById("expectedAmount").value = "";
+        document.getElementById("fundType").value = "Exam";
+        document.getElementById("method").value = "bank";
+        document.getElementById("transactionCode").value = "";
+        document.getElementById("payer").value = "";
+        loadTransactions();
+        loadBalance();
+      } catch (error) {
+        console.error("Error handling transaction:", error);
+        showMessage("otherFundsMessage", `Failed to handle transaction: ${error.message}`);
+      }
+    }
+
+    function downloadPDF() {
+      if (!selectedStudent) {
+        showMessage("otherFundsMessage", "Please select a student to download transactions.");
+        return;
+      }
+
+      const selectedTerm = document.getElementById("termSelect").value;
+      const termText = selectedTerm ? `Term${selectedTerm}` : "AllTerms";
+      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const fileName = `Other_Funds_Transactions_${termText}_${date}.pdf`;
+
+      let latexContent = `
+\\documentclass{article}
+\\usepackage{geometry}
+\\usepackage{booktabs}
+\\usepackage{longtable}
+\\usepackage{pdflscape}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{lmodern}
+\\geometry{a4paper, margin=1in}
+
+\\begin{document}
+\\begin{landscape}
+\\centering
+\\vspace*{1cm}
+{\\Large \\textbf{Other Funds Transactions - MACS Primary School}} \\\\
+\\vspace{0.5cm}
+{\\normalsize Student: ${selectedStudent.regNo} - ${selectedStudent.name} \\\\ Term: ${selectedTerm || "All"} \\\\ Generated on: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}}
+\\vspace{1cm}
+\\begin{longtable}{p{1.2cm}|p{2cm}|p{1.5cm}|p{2cm}|p{2cm}|p{2cm}|p{2cm}|p{2cm}}
+\\hline
+\\textbf{Date} & \\textbf{Fund Type} & \\textbf{Amount} & \\textbf{Exp. Amount} & \\textbf{Payment} & \\textbf{Tx Code} & \\textbf{Payer} & \\textbf{Posted By} \\\\
+\\hline
+\\endhead
+`;
+
+      allTransactions.forEach(tx => {
+        latexContent += `${tx.date.replace(/&/g, '\\&')} & ${tx.fundType.replace(/&/g, '\\&')} & ${tx.amount.toFixed(2)} & ${tx.expectedAmount.toFixed(2)} & ${tx.method.replace(/&/g, '\\&')} & ${tx.transactionCode.replace(/&/g, '\\&')} & ${tx.payer.replace(/&/g, '\\&')} & ${tx.postedBy.replace(/&/g, '\\&')} \\\\ \\hline\n`;
+      });
+
+      latexContent += `
+\\end{longtable}
+\\end{landscape}
+\\end{document}
+      `;
+
+      const blob = new Blob([latexContent], { type: "text/latex" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+</body>
+</html>
