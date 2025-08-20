@@ -738,8 +738,11 @@
         const studentsList = [];
 
         Object.entries(students).forEach(([regNo, student]) => {
-          const studentForm = student.form || `form${student.profile?.year || "1"}`;
-          if (studentForm === form) {
+          const studentForm = student.form?.toLowerCase() || `form${student.profile?.year || "1"}`.toLowerCase();
+          const selectedForm = form.toLowerCase();
+          if (studentForm === selectedForm || 
+              (selectedForm === "pp1" && studentForm === "preprimary1") || 
+              (selectedForm === "pp2" && studentForm === "preprimary2")) {
             studentsList.push({
               regNo,
               name: student.profile?.name || "Unknown",
@@ -779,7 +782,7 @@
 
     async function loadStats() {
       try {
-        const form = document.getElementById("feesFormSelect").value;
+        const form = document.getElementById("feesFormSelect").value.toLowerCase();
         const snapshot = await db.ref("users/students").once("value");
         const students = snapshot.val() || {};
         const today = new Date().toLocaleDateString("en-US", { timeZone: "Africa/Nairobi" });
@@ -788,8 +791,10 @@
         let pendingBalances = 0;
 
         Object.entries(students).forEach(([regNo, student]) => {
-          const studentForm = student.form || `form${student.profile?.year || "1"}`;
-          if (studentForm === form) {
+          const studentForm = student.form?.toLowerCase() || `form${student.profile?.year || "1"}`.toLowerCase();
+          if (studentForm === form || 
+              (form === "pp1" && studentForm === "preprimary1") || 
+              (form === "pp2" && studentForm === "preprimary2")) {
             totalStudents++;
             const transactions = student.fees?.transactions || {};
             Object.values(transactions).forEach(tx => {
@@ -808,7 +813,10 @@
         const transactionsSnapshot = await db.ref("transactions").orderByChild("type").equalTo("fee_payment").once("value");
         const transactions = transactionsSnapshot.val() || {};
         Object.values(transactions).forEach(tx => {
-          if (students[tx.regNo]?.form === form) {
+          const studentForm = students[tx.regNo]?.form?.toLowerCase();
+          if (studentForm === form || 
+              (form === "pp1" && studentForm === "preprimary1") || 
+              (form === "pp2" && studentForm === "preprimary2")) {
             totalFees += tx.amount || 0;
           }
         });
@@ -826,14 +834,16 @@
 
     async function loadRecentTransactions() {
       try {
-        const form = document.getElementById("feesFormSelect").value;
+        const form = document.getElementById("feesFormSelect").value.toLowerCase();
         const snapshot = await db.ref("users/students").once("value");
         const students = snapshot.val() || {};
         const transactions = [];
 
         Object.entries(students).forEach(([regNo, student]) => {
-          const studentForm = student.form || `form${student.profile?.year || "1"}`;
-          if (studentForm === form) {
+          const studentForm = student.form?.toLowerCase() || `form${student.profile?.year || "1"}`.toLowerCase();
+          if (studentForm === form || 
+              (form === "pp1" && studentForm === "preprimary1") || 
+              (form === "pp2" && studentForm === "preprimary2")) {
             const studentTransactions = student.fees?.transactions || {};
             Object.entries(studentTransactions).forEach(([key, tx]) => {
               transactions.push({
