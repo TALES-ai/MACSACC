@@ -498,7 +498,6 @@
       </div>
     </div>
   </div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDqVIFxRrkNSejRuNY9NPYrMpUShO2Yz7U",
@@ -509,7 +508,6 @@
       messagingSenderId: "129785956666",
       appId: "1:129785956666:web:541a08bee37c739556a803"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
@@ -520,7 +518,7 @@
     const transactionsPerPage = 10;
     let sortColumn = 'timestamp';
     let sortDirection = 'desc';
-
+    const seenTransactionCodes = new Set(); // To track unique transaction codes
     auth.onAuthStateChanged(async user => {
       if (!user) {
         console.error("Authentication failed: No user logged in");
@@ -528,27 +526,22 @@
         window.location.href = "index.html";
         return;
       }
-
       try {
         const userEmail = user.email;
         const allowedEmails = ["macsschool@account.ac", "stellamachogu2025@gmail.com", "bttc@admin.ep.finley"];
         console.log("Checking user permissions:", { userId: user.uid, userEmail });
-
         const userSnapshot = await db.ref(`users/${user.uid}/role`).once("value");
         const userRole = userSnapshot.val();
         console.log(`User role from Firebase: ${userRole || 'none'}`);
-
         if (!allowedEmails.includes(userEmail) && userRole !== "admin" && userRole !== "accountant") {
           console.error("Permission denied: User lacks required role or email", { userId: user.uid, userEmail, userRole });
           sessionStorage.clear();
           window.location.href = "index.html";
           return;
         }
-
         const accountantEmail = sessionStorage.getItem("username") || userEmail || "macsschool@account.ac";
         const accountantName = accountantEmail.split("@")[0].replace(/\d/g, "");
         document.getElementById("accountantName").textContent = accountantName;
-
         // Greeting and quote (07:43 PM EAT)
         const hour = new Date().getHours();
         const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
@@ -561,7 +554,6 @@
         ];
         const day = new Date().getDay();
         document.getElementById("quote").textContent = quotes[day % quotes.length];
-
         loadTransactions();
         loadStats();
         setTimeout(() => loadingScreen.classList.add("hidden"), 300);
@@ -572,7 +564,6 @@
         window.location.href = "index.html";
       }
     });
-
     function showMessage(elementId, message, isError = true) {
       const messageDiv = document.getElementById(elementId);
       messageDiv.textContent = message;
@@ -582,7 +573,6 @@
         messageDiv.style.display = "none";
       }, 3000);
     }
-
     function showExportMessage(format) {
       document.getElementById("exportText").textContent = `Exported as ${format} successfully!`;
       exportModal.style.display = "flex";
@@ -590,7 +580,6 @@
         exportModal.style.display = "none";
       }, 2000);
     }
-
     function logout() {
       auth.signOut().then(() => {
         sessionStorage.clear();
@@ -600,27 +589,19 @@
         showMessage("fundsMessage", `Logout failed: ${error.message}`);
       });
     }
-
     async function loadTransactions() {
       const tableBody = document.getElementById("fundsBody");
       tableBody.innerHTML = "";
       allTransactions = [];
-
+      seenTransactionCodes.clear(); // Clear the set for fresh load
       try {
-        console.log("Fetching transactions from 'transactions' node");
+        console.log("Fetching transactions from 'transactions' node only");
         const snapshot = await db.ref("transactions").once("value");
         const transactions = snapshot.val() || {};
-        const studentSnapshot = await db.ref("users/students").once("value");
-        const students = studentSnapshot.val() || {};
-
         for (const [key, tx] of Object.entries(transactions)) {
-          if (tx && tx.amount != null && tx.description && tx.status === "completed" && tx.timestamp && tx.type) {
-            let method = tx.method || "N/A";
-            if (tx.type === "fee_payment" && tx.regNo) {
-              const studentTx = students[tx.regNo]?.fees?.transactions || {};
-              const matchingTx = Object.values(studentTx).find(stx => stx.transactionCode === tx.transactionCode);
-              method = matchingTx?.method ? matchingTx.method.charAt(0).toUpperCase() + matchingTx.method.slice(1) : "N/A";
-            }
+          if (tx && tx.amount != null && tx.description && tx.status === "completed" && tx.timestamp && tx.type && !seenTransactionCodes.has(tx.transactionCode)) {
+            seenTransactionCodes.add(tx.transactionCode); // Track unique transaction codes
+            const method = tx.method ? tx.method.charAt(0).toUpperCase() + tx.method.slice(1) : "N/A";
             const type = ["fee_payment", "other_funds_uniform", "addition"].includes(tx.type) ? "Incoming" : tx.type === "deduction" ? "Outgoing" : tx.type;
             allTransactions.push({
               key,
@@ -637,57 +618,36 @@
               studentName: tx.studentName || "N/A"
             });
           } else {
-            console.warn(`Skipping invalid transaction for key: ${key}`, tx);
+            console.warn(`Skipping invalid or duplicate transaction for key: ${key}`, tx);
           }
         }
-
-        console.log(`Loaded ${allTransactions.length} valid transactions`);
-
+        console.log(`Loaded ${allTransactions.length} unique transactions`);
         // Real-time listener for new transactions
         db.ref("transactions").orderByChild("timestamp").on("child_added", (snapshot) => {
           const tx = snapshot.val();
-          if (tx && tx.amount != null && tx.description && tx.status === "completed" && tx.timestamp && tx.type) {
-            let method = tx.method || "N/A";
-            if (tx.type === "fee_payment" && tx.regNo) {
-              db.ref(`users/students/${tx.regNo}/fees/transactions`).orderByChild("transactionCode").equalTo(tx.transactionCode).once("value", (studentSnap) => {
-                const studentTx = Object.values(studentSnap.val() || {}).find(stx => stx.transactionCode === tx.transactionCode);
-                method = studentTx?.method ? studentTx.method.charAt(0).toUpperCase() + studentTx.method.slice(1) : "N/A";
-                allTransactions.unshift({
-                  key: snapshot.key,
-                  date: new Date(tx.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-                  method,
-                  amount: Number(tx.amount),
-                  type: ["fee_payment", "other_funds_uniform", "addition"].includes(tx.type) ? "Incoming" : tx.type === "deduction" ? "Outgoing" : tx.type,
-                  description: tx.description,
-                  postedBy: tx.accountant || (tx.description.match(/by\s+([^\s]+)/i)?.[1] || "macsschool"),
-                  transactionCode: tx.transactionCode || "N/A",
-                  timestamp: tx.timestamp,
-                  balanceAfter: tx.balance_after || "N/A",
-                  regNo: tx.regNo || "N/A",
-                  studentName: tx.studentName || "N/A"
-                });
-                filterTransactions();
-              });
-            } else {
-              allTransactions.unshift({
-                key: snapshot.key,
-                date: new Date(tx.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-                method,
-                amount: Number(tx.amount),
-                type: ["fee_payment", "other_funds_uniform", "addition"].includes(tx.type) ? "Incoming" : tx.type === "deduction" ? "Outgoing" : tx.type,
-                description: tx.description,
-                postedBy: tx.accountant || (tx.description.match(/by\s+([^\s]+)/i)?.[1] || "macsschool"),
-                transactionCode: tx.transactionCode || "N/A",
-                timestamp: tx.timestamp,
-                balanceAfter: tx.balance_after || "N/A",
-                regNo: tx.regNo || "N/A",
-                studentName: tx.studentName || "N/A"
-              });
-              filterTransactions();
-            }
+          if (tx && tx.amount != null && tx.description && tx.status === "completed" && tx.timestamp && tx.type && !seenTransactionCodes.has(tx.transactionCode)) {
+            seenTransactionCodes.add(tx.transactionCode); // Track new transaction code
+            const method = tx.method ? tx.method.charAt(0).toUpperCase() + tx.method.slice(1) : "N/A";
+            const type = ["fee_payment", "other_funds_uniform", "addition"].includes(tx.type) ? "Incoming" : tx.type === "deduction" ? "Outgoing" : tx.type;
+            allTransactions.unshift({
+              key: snapshot.key,
+              date: new Date(tx.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+              method,
+              amount: Number(tx.amount),
+              type,
+              description: tx.description,
+              postedBy: tx.accountant || (tx.description.match(/by\s+([^\s]+)/i)?.[1] || "macsschool"),
+              transactionCode: tx.transactionCode || "N/A",
+              timestamp: tx.timestamp,
+              balanceAfter: tx.balance_after || "N/A",
+              regNo: tx.regNo || "N/A",
+              studentName: tx.studentName || "N/A"
+            });
+            filterTransactions();
+          } else {
+            console.warn(`Skipping new invalid or duplicate transaction: ${snapshot.key}`, tx);
           }
         });
-
         filterTransactions();
       } catch (error) {
         console.error("Error loading transactions:", error);
@@ -695,17 +655,14 @@
         tableBody.innerHTML = `<tr><td colspan="7">Failed to load transactions: ${error.message}</td></tr>`;
       }
     }
-
     async function loadStats() {
       try {
         const today = new Date().toLocaleDateString("en-US", { timeZone: "Africa/Nairobi" });
         let totalFunds = 0;
         let incomingToday = 0;
         let outgoingToday = 0;
-
         const snapshot = await db.ref("school_funds/balance").once("value");
         totalFunds = snapshot.val() || 0;
-
         const transactions = allTransactions.filter(tx => tx.date === new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
         transactions.forEach(tx => {
           if (tx.type === "Incoming") {
@@ -714,7 +671,6 @@
             outgoingToday += tx.amount;
           }
         });
-
         document.getElementById("totalFunds").textContent = `${totalFunds.toFixed(2)} KES`;
         document.getElementById("incomingToday").textContent = `${incomingToday.toFixed(2)} KES`;
         document.getElementById("outgoingToday").textContent = `${outgoingToday.toFixed(2)} KES`;
@@ -723,7 +679,6 @@
         showMessage("fundsMessage", `Failed to load stats: ${error.message}`);
       }
     }
-
     function sortTable(column) {
       if (sortColumn === column) {
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -731,7 +686,6 @@
         sortColumn = column;
         sortDirection = 'asc';
       }
-
       const headers = document.querySelectorAll("th");
       headers.forEach(header => {
         header.classList.remove("sort-asc", "sort-desc");
@@ -739,7 +693,6 @@
           header.classList.add(`sort-${sortDirection}`);
         }
       });
-
       allTransactions.sort((a, b) => {
         let valA = a[column] || '';
         let valB = b[column] || '';
@@ -755,10 +708,8 @@
         }
         return sortDirection === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
       });
-
       filterTransactions();
     }
-
     function filterTransactions() {
       const searchTerm = document.getElementById("searchBar").value.toLowerCase();
       const methodFilter = document.getElementById("methodFilter").value;
@@ -767,7 +718,6 @@
       const dateEnd = document.getElementById("dateEnd").value;
       const tableBody = document.getElementById("fundsBody");
       tableBody.innerHTML = "";
-
       let filteredTransactions = allTransactions.filter(tx => {
         const matchesSearch = (
           (tx.description || "").toLowerCase().includes(searchTerm) ||
@@ -782,16 +732,13 @@
         const matchesDate = (!startDate || txDate >= startDate) && (!endDate || txDate <= new Date(endDate.setHours(23, 59, 59, 999)));
         return matchesSearch && matchesMethod && matchesType && matchesDate;
       });
-
       const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
       filteredTransactions = filteredTransactions.slice((currentPage - 1) * transactionsPerPage, currentPage * transactionsPerPage);
-
       if (filteredTransactions.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="7">No transactions match the criteria.</td></tr>`;
         updatePagination(totalPages);
         return;
       }
-
       filteredTransactions.forEach(tx => {
         const row = document.createElement("tr");
         row.style.cursor = "pointer";
@@ -807,10 +754,8 @@
         `;
         tableBody.appendChild(row);
       });
-
       updatePagination(totalPages);
     }
-
     function showDetails(tx) {
       document.getElementById("detailDate").textContent = tx.date;
       document.getElementById("detailMethod").textContent = tx.method;
@@ -824,12 +769,10 @@
       document.getElementById("detailStudentName").textContent = tx.studentName;
       document.getElementById("detailsModal").style.display = "block";
     }
-
     function updatePagination(totalPages) {
       const pagination = document.getElementById("pagination");
       pagination.innerHTML = "";
       if (totalPages <= 1) return;
-
       const prevButton = document.createElement("button");
       prevButton.textContent = "Previous";
       prevButton.disabled = currentPage === 1;
@@ -840,7 +783,6 @@
         }
       };
       pagination.appendChild(prevButton);
-
       for (let i = 1; i <= totalPages; i++) {
         const button = document.createElement("button");
         button.textContent = i;
@@ -851,7 +793,6 @@
         };
         pagination.appendChild(button);
       }
-
       const nextButton = document.createElement("button");
       nextButton.textContent = "Next";
       nextButton.disabled = currentPage === totalPages;
@@ -863,7 +804,6 @@
       };
       pagination.appendChild(nextButton);
     }
-
     function downloadCSV() {
       const searchTerm = document.getElementById("searchBar").value.toLowerCase();
       const methodFilter = document.getElementById("methodFilter").value;
@@ -872,7 +812,6 @@
       const dateEnd = document.getElementById("dateEnd").value;
       const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       const fileName = `Funds_Transactions_${date}.csv`;
-
       const filteredTransactions = allTransactions.filter(tx => {
         const matchesSearch = (
           (tx.description || "").toLowerCase().includes(searchTerm) ||
@@ -887,12 +826,10 @@
         const matchesDate = (!startDate || txDate >= startDate) && (!endDate || txDate <= new Date(endDate.setHours(23, 59, 59, 999)));
         return matchesSearch && matchesMethod && matchesType && matchesDate;
       });
-
       const headers = ["Date,Means of Payment,Amount (KES),Type,Description,Posted By,Transaction Code"];
-      const rows = filteredTransactions.map(tx => 
+      const rows = filteredTransactions.map(tx =>
         `"${tx.date}","${tx.method}","${tx.amount.toFixed(2)}","${tx.type}","${tx.description.replace(/"/g, '""')}","${tx.postedBy}","${tx.transactionCode}"`
       );
-
       const csvContent = headers.concat(rows).join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
@@ -902,7 +839,6 @@
       URL.revokeObjectURL(link.href);
       showExportMessage("CSV");
     }
-
     function downloadJSON() {
       const searchTerm = document.getElementById("searchBar").value.toLowerCase();
       const methodFilter = document.getElementById("methodFilter").value;
@@ -911,7 +847,6 @@
       const dateEnd = document.getElementById("dateEnd").value;
       const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       const fileName = `Funds_Transactions_${date}.json`;
-
       const filteredTransactions = allTransactions.filter(tx => {
         const matchesSearch = (
           (tx.description || "").toLowerCase().includes(searchTerm) ||
@@ -926,7 +861,6 @@
         const matchesDate = (!startDate || txDate >= startDate) && (!endDate || txDate <= new Date(endDate.setHours(23, 59, 59, 999)));
         return matchesSearch && matchesMethod && matchesType && matchesDate;
       });
-
       const jsonContent = JSON.stringify(filteredTransactions.map(tx => ({
         Date: tx.date,
         "Means of Payment": tx.method,
@@ -944,7 +878,6 @@
       URL.revokeObjectURL(link.href);
       showExportMessage("JSON");
     }
-
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -955,7 +888,6 @@
       const dateEnd = document.getElementById("dateEnd").value;
       const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       const fileName = `Funds_Transactions_${date}.pdf`;
-
       const filteredTransactions = allTransactions.filter(tx => {
         const matchesSearch = (
           (tx.description || "").toLowerCase().includes(searchTerm) ||
@@ -970,12 +902,10 @@
         const matchesDate = (!startDate || txDate >= startDate) && (!endDate || txDate <= new Date(endDate.setHours(23, 59, 59, 999)));
         return matchesSearch && matchesMethod && matchesType && matchesDate;
       });
-
       doc.setFontSize(16);
       doc.text("MACS Primary School - Funds Transactions", 14, 22);
       doc.setFontSize(10);
       doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 14, 30);
-
       doc.autoTable({
         head: [['Date', 'Means of Payment', 'Amount (KES)', 'Type', 'Description', 'Posted By', 'Transaction Code']],
         body: filteredTransactions.map(tx => [
@@ -1001,10 +931,9 @@
           6: { cellWidth: 25 }
         }
       });
-
       doc.save(fileName);
       showExportMessage("PDF");
     }
   </script>
 </body>
-</html>= N 
+</html>
