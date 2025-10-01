@@ -398,6 +398,40 @@
     let sortColumn = 0;
     let sortDirection = 1;
 
+    function getFormKey(formValue) {
+      if (!formValue) return 'grade1'; // default
+      const lower = formValue.toLowerCase().trim();
+      // Playgroup
+      if (lower.includes('play') && lower.includes('group')) return 'playgroup';
+      // Pre-Primary 1
+      if ((lower.includes('pre') && lower.includes('primary') && lower.includes('1')) ||
+          lower.includes('pp1') || (lower.includes('pp') && lower.includes('1'))) {
+        return 'pp1';
+      }
+      // Pre-Primary 2
+      if ((lower.includes('pre') && lower.includes('primary') && lower.includes('2')) ||
+          lower.includes('pp2') || (lower.includes('pp') && lower.includes('2'))) {
+        return 'pp2';
+      }
+      // Grades
+      const numMatch = lower.match(/(?:grade\s*)?(\d+)/);
+      if (numMatch) {
+        const num = parseInt(numMatch[1]);
+        if (num >=1 && num <=9) return `grade${num}`;
+      }
+      return 'grade1'; // default
+    }
+
+    function getFormDisplay(formKey) {
+      switch(formKey) {
+        case 'playgroup': return 'Play Group';
+        case 'pp1': return 'Pre-Primary 1';
+        case 'pp2': return 'Pre-Primary 2';
+        default:
+          return formKey.replace("grade", "Grade ");
+      }
+    }
+
     function showMessage(elementId, message, isError = true) {
       const messageDiv = document.getElementById(elementId);
       messageDiv.textContent = message;
@@ -436,7 +470,7 @@
           }
           seenRegNos.add(normalizedRegNo);
 
-          const studentForm = student.form || `form${student.profile?.year || "1"}`;
+          const studentForm = getFormKey(student.form || student.profile?.year || "1");
           if (form === "all" || studentForm === form) {
             const totalExpected = student.fees?.totalExpected || 0;
             const transactions = student.fees?.transactions || {};
@@ -460,7 +494,8 @@
         document.getElementById("totalBalance").textContent = `Total Balance: ${totalBalance.toFixed(2)} KES`;
 
         if (studentsList.length === 0) {
-          studentsBody.innerHTML = `<tr><td colspan="7">No students found in ${form === "all" ? "any form" : form.replace("pp", "Pre-Primary ").replace("grade", "Grade ")}.</td></tr>`;
+          const displayForm = form === "all" ? "any form" : getFormDisplay(form);
+          studentsBody.innerHTML = `<tr><td colspan="7">No students found in ${displayForm}.</td></tr>`;
           updatePagination();
           return;
         }
@@ -516,7 +551,7 @@
       const paginatedStudents = studentsList.slice(start, end);
 
       paginatedStudents.forEach(student => {
-        const formDisplay = student.form === "playgroup" ? "Play Group" : student.form.replace("pp", "Pre-Primary ").replace("grade", "Grade ");
+        const formDisplay = getFormDisplay(student.form);
         studentsBody.innerHTML += `
           <tr>
             <td>${student.regNo}</td>
@@ -566,7 +601,7 @@
           }
           seenRegNos.add(normalizedRegNo);
 
-          const studentForm = student.form || `form${student.profile?.year || "1"}`;
+          const studentForm = getFormKey(student.form || student.profile?.year || "1");
           const studentName = student.profile?.name?.toLowerCase() || "";
           if ((form === "all" || studentForm === form) &&
               (searchQuery === "" || normalizedRegNo.toLowerCase().includes(searchQuery) || studentName.includes(searchQuery))) {
@@ -592,7 +627,8 @@
         document.getElementById("totalBalance").textContent = `Total Balance: ${totalBalance.toFixed(2)} KES`;
 
         if (studentsList.length === 0) {
-          studentsBody.innerHTML = `<tr><td colspan="7">No students found.</td></tr>`;
+          const displayForm = form === "all" ? "any form" : getFormDisplay(form);
+          studentsBody.innerHTML = `<tr><td colspan="7">No students found in ${displayForm}.</td></tr>`;
           updatePagination();
           return;
         }
@@ -616,7 +652,7 @@
         csvContent += "Reg No,Name,Level,Stream,Total Expected (KES),Total Paid (KES),Balance (KES)\n";
 
         studentsList.forEach(student => {
-          const formDisplay = student.form === "playgroup" ? "Play Group" : student.form.replace("pp", "Pre-Primary ").replace("grade", "Grade ");
+          const formDisplay = getFormDisplay(student.form);
           csvContent += `${student.regNo},${student.name},${formDisplay},${student.stream},${student.totalExpected.toFixed(2)},${student.totalPaid.toFixed(2)},${student.balance.toFixed(2)}\n`;
         });
 
